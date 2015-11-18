@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% set active_page = "admin" %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+    <h1> Admin </h1>
+    Welcome to the admin screen{% if user %} {{user.nickname()}}{% endif %}!
+    {% if user %}
+    <a href={{logout}}>logout</a>
+    {% endif %}
+{% endblock %}

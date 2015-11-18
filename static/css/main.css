@@ -1,0 +1,15 @@
+.home-menu {
+    padding: 1em;
+    padding-right: 2em;
+    position: relative;
+    background-color: #dddddd;
+}
+
+.home-menu ul {
+    float: right;
+}
+
+#footer {
+    padding: 15px;
+    text-align: center;
+}

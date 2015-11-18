@@ -1,0 +1,15 @@
+{% set navigation_bar = [
+    ('/', 'home', 'Home'),
+    ('/admin', 'admin', 'Admin'),
+    ('/hello', 'hello', 'Hello')
+] %}
+<div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+    <a href="#" class="pure-menu-heading pure-menu-link">Texas Bluebonnets</a>
+    <ul class="pure-menu-list">
+        {% for href, id, caption in navigation_bar %}
+        <li class="pure-menu-item{% if id == active_page %} pure-menu-selected{% endif %}">
+            <a href="{{ href|e }}" class="pure-menu-link">{{ caption|e }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>

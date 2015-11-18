@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% set active_page = "home" %}
+{% block title %}Index{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .important { color: #336699; }
+    </style>
+{% endblock %}
+{% block content %}
+    <h1> Index </h1>
+    <p class="important"> This is important! </p>
+    Welcome to the main page{% if user %} {{user.nickname()}}{% endif %}!
+    {% if user %}
+    <a href={{logout}}>logout</a>
+    {% endif %}
+{% endblock %}
