@@ -32,7 +32,9 @@ class UserData(ndb.Model):
     # use it in a query.
     user = ndb.UserProperty(indexed=True)
 
-    # TODO do we need a name or can we just use user.name?
+    # Need a name for the user so they can be easily identified by officers
+    first_name = ndb.StringProperty()
+    last_name = ndb.StringProperty()
 
     # Current bluebonnets are active. Past members are inactive (but still
     # available in the datastore if they are needed again)
@@ -40,6 +42,10 @@ class UserData(ndb.Model):
 
     # Exceptions to the number of points a member needs
     point_exceptions = ndb.StructuredProperty(PointException, repeated=True)
+
+    # The permissions that this user has. This is a list of strings that could
+    # be "user" or "officer"
+    user_permissions = ndb.StringProperty(repeated=True)
 
     @property
     def point_records(self):
