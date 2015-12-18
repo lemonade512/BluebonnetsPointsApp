@@ -6,5 +6,7 @@
     Welcome to the hello screen{% if user_data %} {{user_data.first_name}} {{user_data.last_name}} {% endif %}!
     {% if user_data %}
     <a href={{logout}}>logout</a>
+    {% else %}
+    <a href={{login}}>login</a>
     {% endif %}
 {% endblock %}
