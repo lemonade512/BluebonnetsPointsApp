@@ -48,6 +48,25 @@ class UserData(ndb.Model):
     # be "user" or "officer"
     user_permissions = ndb.StringProperty(repeated=True)
 
+    @staticmethod
+    def get_from_url_segment(url_segment):
+        # TODO this flow is a bit weird. There is theoretically a problem if a
+        # a user_id is the same as a username because it will get the user with
+        # the id before anything else.
+        # TODO Instead we could save the user_id and key as 'id_' + user.user_id()
+        # (i.e. we have the id_ prefix and can check for that in the url_segment)
+        user_data = UserData.get_user_from_id(url_segment)
+        if not user_data:
+            user_data = UserData.get_from_username(url_segment)
+
+        return user_data
+
+    # TODO when creating users we need a way to ensure unique usernames that
+    # are generated using the user's first and last name
+    @property
+    def username(self):
+        return self.first_name + self.last_name
+
     @property
     def point_records(self):
         return PointRecord.query().filter(PointRecord.user_data == self.key)
@@ -61,14 +80,28 @@ class UserData(ndb.Model):
         """
         user = users.get_current_user()
         if user:
-            #q = UserData.query().filter(UserData.user_id == user.user_id())
-            #user_data = q.get()
-            user_k = ndb.Key('UserData', user.user_id())
-            user_data = user_k.get()
+            user_data = UserData.get_user_from_id(user.user_id())
         else:
             user_data = None
 
         return user_data
+
+    @staticmethod
+    def get_from_username(username):
+        # TODO this method sucks
+        # TODO this is not strongly consistent because users are not stored in
+        # an entity group and we are not querying by key only.
+        q = UserData.query()
+        for u in q:
+            if u.username == username:
+                return u
+
+        return None
+
+    @staticmethod
+    def get_user_from_id(uid):
+        user_k = ndb.Key('UserData', uid)
+        return user_k.get()
 
 
 # NOTE The UserData should be the parent entity of the PointRecord. This will

@@ -1,7 +1,7 @@
 {% set navigation_bar = [
     ('/', 'home', 'Home'),
     ('/admin', 'admin', 'Admin'),
-    ('/hello', 'hello', 'Hello')
+    ('/hello', 'hello', 'Hello'),
 ] %}
 <div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
     <a href="#" class="pure-menu-heading pure-menu-link">Texas Bluebonnets</a>
@@ -11,5 +11,14 @@
             <a href="{{ href|e }}" class="pure-menu-link">{{ caption|e }}</a>
         </li>
         {% endfor %}
+        {% if user_data %}
+        <li class="pure-menu-item{% if 'profile' == active_page %} pure-menu-selected{% endif %}">
+            <a href="/profile/{{ user_data.user_id }}" class="pure-menu-link">Profile</a>
+        </li>
+        {% else %}
+        <li class="pure-menu-item{% if 'login' == active_page %} pure-menu-selected{% endif %}">
+            <a href="/login" class="pure-menu-link">Login</a>
+        </li>
+        {%endif%}
     </ul>
 </div>

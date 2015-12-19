@@ -25,6 +25,26 @@ def hello():
     """ Return a friendly HTTP greeting. """
     return render_jinja_template("hello.html")
 
+# TODO The only people who should be able to view a users profile page are
+# officers and the user himself
+@app.route('/profile/<user_url_segment>')
+def profile(user_url_segment):
+    target_user = UserData.get_from_url_segment(user_url_segment)
+    if target_user is None:
+        # TODO should I make this template more informative? Right now it just
+        # says a user could not be found, not which user could not be found.
+        # Although, I really don't know how to determine the user if the id
+        # could not be found.
+        return render_jinja_template("noprofile.html"), 404
+
+    if target_user.username != user_url_segment:
+        return redirect('/profile/{0}'.format(target_user.username))
+
+    template_values = {
+        'target_user': target_user,
+    }
+    return render_jinja_template("profile.html", template_values)
+
 # NOTE the route decorator must be first so it decorates the function returned by
 # any decorators following.
 @app.route('/hello-perm')

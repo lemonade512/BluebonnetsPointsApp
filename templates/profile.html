@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% set active_page = "profile" %}
+{% block title %}No Profile{% endblock %}
+{% block content %}
+    <h1> User Profile </h1>
+    <label>First Name</label> {{target_user.first_name}}
+    <br />
+    <label>Last Name</label> {{target_user.last_name}}
+{% endblock %}
