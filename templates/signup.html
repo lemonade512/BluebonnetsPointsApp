@@ -20,12 +20,9 @@ $(function () {
 {% endblock %}
 {% block content %}
 
-<form id="profile-form" method="post" action="/createuser">
-    <label>First Name</label>
-    <input type="text" name="fname" />
-
-    <label>Last Name</label>
-    <input type="text" name="lname" />
+<form id="profile-form" method="post" action="/createuser" class="pure-form pure-form-stacked">
+    <input type="text" id="fname" name="fname" placeholder="First Name" />
+    <input type="text" id="lname" name="lname" placeholder="Last Name" />
 
     <input type="submit" class="pure-button" value="Submit"/>
 </form>
