@@ -22,8 +22,21 @@ def admin():
 
 @app.route('/hello')
 def hello():
-    """ Return a friendly HTTP greeting. """
     return render_jinja_template("hello.html")
+
+@app.route('/members')
+@require_permission('officer')
+def members():
+    # TODO right now I am getting all of the users on a server and then
+    # rendering the template. It might be better to make an ajax request
+    # to populate the data on the client. This would allow better
+    # client-side error handling if data is missing (a page could still be
+    # shown)
+    template_values = {
+        'users': UserData.query().order(UserData.first_name)
+    }
+
+    return render_jinja_template("members.html", template_values)
 
 # TODO The only people who should be able to view a users profile page are
 # officers and the user himself
@@ -107,6 +120,20 @@ def application_error(e):
 #                               API                                           #
 # *************************************************************************** #
 
+# TODO I am not following good REST standards. I should change that
+
+@app.route('/updateuser', methods=["POST"])
+def updateuser():
+    # TODO check that the current user is either the target user or an officer
+    data = request.form
+    user = UserData.get_user_from_id(data['target_user_id'])
+    if not user:
+        raise Exception("I don't know that person")
+    user.first_name = data['fname']
+    user.last_name = data['lname']
+    user.put()
+    return ('', '204')
+
 @app.route('/createuser', methods=["POST"])
 def createuser():
     data = request.form
@@ -124,8 +151,10 @@ def createuser():
     user_data.user_id = user.user_id()
     user_data.first_name = data['fname']
     user_data.last_name = data['lname']
-    #user_data.user_permissions = ['user', 'officer']
-    user_data.user_permissions = ['user']
+    # TODO when we create a way to change permissions then this should not be
+    # the default permission set
+    user_data.user_permissions = ['user', 'officer']
+    #user_data.user_permissions = ['user']
     user_data.put()
 
     # Return a '204: No Data' response. I believe this is how you handle

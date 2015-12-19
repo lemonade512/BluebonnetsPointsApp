@@ -1,9 +1,33 @@
 {% extends "base.html" %}
 {% set active_page = "profile" %}
 {% block title %}No Profile{% endblock %}
+{% block javascript %}
+<script>
+$(function () {
+    $('#profile-form').submit(function (event) {
+        $.post('/updateuser', {
+            fname: $('input[name=fname]').val(),
+            lname: $('input[name=lname]').val(),
+            target_user_id: "{{ target_user.user_id }}",
+        }, function (data) {
+            $('#outcome').html('<span style="color: green">Successfully saved!</span>');
+        }).fail(function() {
+            // TODO This should be more user friendly
+            $('#outcome').html('<span style="color: red">There was a problem!</span>');
+        });
+        event.preventDefault();
+    });
+});
+</script>
+{% endblock %}
 {% block content %}
     <h1> User Profile </h1>
-    <label>First Name</label> {{target_user.first_name}}
-    <br />
-    <label>Last Name</label> {{target_user.last_name}}
+    <form id="profile-form" method="post" action="/updateuser" class="pure-form pure-form-stacked">
+        <label for="fname">First Name</label>
+        <input type="text" id="fname" name="fname" value={{target_user.first_name}} />
+        <label for="lname">Last Name</label>
+        <input type="text" id="lname" name="lname" value={{target_user.last_name}} />
+        <input type="submit" class="pure-button" value="Submit"/>
+    </form>
+    <p id="outcome"></p>
 {% endblock %}
