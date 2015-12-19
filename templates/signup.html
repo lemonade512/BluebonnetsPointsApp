@@ -8,7 +8,7 @@ $(function () {
             fname: $('input[name=fname]').val(),
             lname: $('input[name=lname]').val(),
         }, function (data) {
-            document.location.href = '{{ cont }}'
+            document.location.href = '{{ next }}'
         }).fail(function() {
             // TODO should I check for an internal server error here?
             alert("ERROR");

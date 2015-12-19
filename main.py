@@ -1,81 +1,45 @@
 """`main` is the top level module for your Flask application."""
 
-# Import the Flask Framework
-from flask import Flask, request, redirect, render_template, url_for
-app = Flask(__name__)
-# Note: We don't need to call run() since our application is embedded within
-# the App Engine WSGI application server.
+import logging
+
+from flask import Flask, request, redirect, url_for
+from google.appengine.api import users
 
 from models import UserData
+from utils import render_jinja_template
+from permissions import require_permission
 
-from functools import wraps
+# Create the flask app
+app = Flask(__name__)
 
-from google.appengine.api import users
-from google.appengine.ext import ndb
+@app.route('/')
+def index():
+    return render_jinja_template("index.html")
 
-# Flask example of login_required
-#from functools import wraps
-#from flask import g, request, redirect, url_for
-#
-#def login_required(f):
-#    @wraps(f)
-#    def decorated_function(*args, **kwargs):
-#        if g.user is None:
-#            return redirect(url_for('login', next=request.url))
-#        return f(*args, **kwargs)
-#    return decorated_function
+@app.route('/admin')
+def admin():
+    return render_jinja_template("admin.html")
 
-#TODO allow multiple perms to be passed in through *args
-#TODO make these show a more user friendly version of the error
-# as opposed to just having some text on the page.
-# TODO move this to a permissions.py library file
-def require_permission(perm):
-    def decorator(f):
-        @wraps(f)
-        def wrapper(*args, **kwargs):
-            user_data = get_current_user_data()
-            if not user_data:
-                return "Must be logged in!!!!"
+@app.route('/hello')
+def hello():
+    """ Return a friendly HTTP greeting. """
+    return render_jinja_template("hello.html")
 
-            if not check_perms(user_data, perm):
-                return "Do not have the following permission: " + str(perm)
-            f(*args, **kwargs)
-        return wrapper
-    return decorator
-
-# TODO move this to a permissions.py library file
-def check_perms(user_data, perm):
-    if perm in user_data.user_permissions:
-        return True
-
-    return False
-
-# TODO move this to UserData model and call it get user by user_id
-def get_current_user_data():
-    """ This function gets the current user's UserData or returns None """
-    user = users.get_current_user()
-    if user:
-        #q = UserData.query().filter(UserData.user_id == user.user_id())
-        #user_data = q.get()
-        user_k = ndb.Key('UserData', user.user_id())
-        user_data = user_k.get()
-    else:
-        user_data = None
-
-    return user_data
+# NOTE the route decorator must be first so it decorates the function returned by
+# any decorators following.
+@app.route('/hello-perm')
+@require_permission('officer')
+def hello_perm():
+    """ Check if officer then show page. """
+    return render_jinja_template("hello.html")
 
 @app.route('/login')
 def login():
-    cont = request.args.get("cont", "/")
-    cont = url_for("postlogin", cont=cont)
-    login_url = users.create_login_url(cont)
-    return render_template("login.html", login_url=login_url)
-
-@app.route('/signup')
-def signup():
-    cont = request.args.get("cont", "/")
-    return render_template("signup.html", cont=cont)
-    #return "Fill in the info to sign up!, Then going to " + request.args.get("cont", "/")
+    next_url = url_for("postlogin", next=request.args.get("next", "/"))
+    template_values = {
+        'google_login_url': users.create_login_url(next_url),
+    }
+    return render_jinja_template("login.html", template_values)
 
 # TODO There might be an issue if the user logs into their google account then doesn't
 # go through the signup process. Then if they click the back button a few times they will
@@ -87,24 +51,44 @@ def postlogin():
 
     This takes care of making sure the user has properly setup their account.
     """
-    cont = request.args.get("cont", "/")
-    user_data = get_current_user_data()
+    next_url = request.args.get("next", "/")
+    user_data = UserData.get_current_user_data()
     if not user_data:
         # Need to create a user account
-        signup_url = url_for("signup", cont=cont)
+        signup_url = url_for("signup", next=next_url)
         return redirect(signup_url)
     else:
-        return redirect(cont)
+        return redirect(next_url)
 
-# TODO Right now when the user is redirected to the hello page they sometimes
-# don't immediately see their name because the UserData object isn't yet
-# consistent in the datastore. I need to figure out a way to fix this. I can
-# either add an ancestor key for UserData objects or I can do some fancy client
-# logic to keep the current UserData cached for a certain period of time.
-# See http://stackoverflow.com/questions/11063597/read-delay-in-app-engine-datastore-after-put
+@app.route('/signup')
+def signup():
+    template_values = {
+        'next': request.args.get("next", "/"),
+    }
+    return render_jinja_template("signup.html", template_values)
+
+
+# **************************************************************************** #
+#                              Error Handlers                                  #
+# **************************************************************************** #
+
+@app.errorhandler(404)
+def page_not_found(e):
+    """Return a custom 404 error."""
+    return render_jinja_template("404.html"), 404
+
+@app.errorhandler(500)
+def application_error(e):
+    """Return a custom 500 error."""
+    return 'Sorry, unexpected error: {}'.format(e), 500
+
+
+# *************************************************************************** #
+#                               API                                           #
+# *************************************************************************** #
+
 @app.route('/createuser', methods=["POST"])
 def createuser():
-    print "Creating User"
     data = request.form
     user = users.get_current_user()
     if not user:
@@ -131,52 +115,5 @@ def createuser():
     # the data if it wanted to.
     return ('', '204')
 
-@app.route('/')
-def index():
-    user = users.get_current_user()
-    login_url = url_for('login', next=request.path)
-    print "Login URL", login_url
-    return render_template("index.html", user=user, logout=users.create_logout_url("/"))
-
-@app.route('/admin')
-def admin():
-    #return "Welcome to the admin screen!"
-    user = users.get_current_user()
-    return render_template("admin.html", user=user, logout=users.create_logout_url("/"))
-
-@app.route('/hello')
-def hello():
-    """ Return a friendly HTTP greeting. """
-    user_data = get_current_user_data()
-    login_url = url_for('login', cont=request.path)
-    return render_template("hello.html", user_data=user_data,
-                           logout=users.create_logout_url("/"),
-                           login=login_url)
-
-    #user = users.get_current_user()
-    #if user:
-    #    return "Hello " + user.nickname()
-    #else:
-    #    return redirect(users.create_login_url(request.url))
-
-# NOTE this is a way for me to do some basic testing of the permissions system
-# NOTE the route decorator must be first so it decorates the function returned by
-# any decorators following.
-@app.route('/hello-perm')
-@require_permission('officer')
-def hello_perm():
-    """ Check if officer then show page. """
-    user_data = get_current_user_data()
-    return render_template("hello.html", user_data=user_data, logout=users.create_logout_url("/"))
-
-
-@app.errorhandler(404)
-def page_not_found(e):
-    """Return a custom 404 error."""
-    return 'Sorry, Nothing at this URL.', 404
-
-
-#@app.errorhandler(500)
-#def application_error(e):
-#    """Return a custom 500 error."""
-#    return 'Sorry, unexpected error: {}'.format(e), 500
+if __name__ == "__main__":
+    logging.getLogger().setLevel(logging.debug)

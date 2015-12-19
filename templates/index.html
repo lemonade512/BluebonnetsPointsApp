@@ -10,8 +10,12 @@
 {% block content %}
     <h1> Index </h1>
     <p class="important"> This is important! </p>
-    Welcome to the main page{% if user %} {{user.nickname()}}{% endif %}!
-    {% if user %}
-    <a href={{logout}}>logout</a>
+    <p>
+        Welcome to the main page{% if user_data %} {{user_data.first_name}}{% endif %}!
+    </p>
+    {% if user_data %}
+        <a href={{logout_url}}>Logout</a>
+    {% else %}
+        <a href={{login_url}}>Login</a>
     {% endif %}
 {% endblock %}

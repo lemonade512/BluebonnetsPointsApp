@@ -1,4 +1,5 @@
 from google.appengine.ext import ndb
+from google.appengine.api import users
 
 # TODO I need to figure out how to store point requirements in a way that
 # officers can change them. One way would be to have a point requirements
@@ -51,24 +52,39 @@ class UserData(ndb.Model):
     def point_records(self):
         return PointRecord.query().filter(PointRecord.user_data == self.key)
 
+    @staticmethod
+    def get_current_user_data():
+        """ This function gets the current user's UserData or returns None
 
-# NOTE when creating a PointRecord make the parent entity key
-# the point type
+        This function uses the key for the UserData object which means it
+        is strongly consistent.
+        """
+        user = users.get_current_user()
+        if user:
+            #q = UserData.query().filter(UserData.user_id == user.user_id())
+            #user_data = q.get()
+            user_k = ndb.Key('UserData', user.user_id())
+            user_data = user_k.get()
+        else:
+            user_data = None
+
+        return user_data
+
+
+# NOTE The UserData should be the parent entity of the PointRecord. This will
+# allow you to have strong consistency without too much of a burden of 1 write
+# per second in an entity group.
 class PointRecord(ndb.Model):
     user_data = ndb.KeyProperty(kind="UserData")
     event = ndb.KeyProperty(kind="Event")
     points_earned = ndb.IntegerProperty()
-
-    # TODO I removed the bottom because it will be the ancestor entity
-    # of the PointRecord. I don't know if this is correct though. I think
-    # it allows you to query and filter by ancestor so I could make a query
-    # that filters by a specific point type.
-    #point_type = ndb.StringProperty()
+    point_type = ndb.StringProperty()
 
 
 class Event(ndb.Model):
     event_name = ndb.StringProperty()
     event_date = ndb.DateTimeProperty()
+    # TODO should I add an archived property?
 
     @property
     def point_records(self):

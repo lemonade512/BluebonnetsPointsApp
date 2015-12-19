@@ -16,7 +16,7 @@
     <body>
         <div id="header">
             {% block header %}
-                {% set active_page = active_page|default('home') %}
+                {% set active_page = active_page|default('') %}
                 {% include 'header.html' %}
             {% endblock %}
 
