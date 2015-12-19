@@ -22,12 +22,20 @@ $(function () {
 {% endblock %}
 {% block content %}
     <h1> User Profile </h1>
-    <form id="profile-form" method="post" action="/updateuser" class="pure-form pure-form-stacked">
-        <label for="fname">First Name</label>
-        <input type="text" id="fname" name="fname" value={{target_user.first_name}} />
-        <label for="lname">Last Name</label>
-        <input type="text" id="lname" name="lname" value={{target_user.last_name}} />
-        <input type="submit" class="pure-button" value="Submit"/>
+    <form id="profile-form" method="post" action="/updateuser" class="pure-form pure-form-aligned">
+        <div class="pure-control-group">
+            <label for="fname">First Name</label>
+            <input type="text" id="fname" name="fname" value={{target_user.first_name}} />
+        </div>
+
+        <div class="pure-control-group">
+            <label for="lname">Last Name</label>
+            <input type="text" id="lname" name="lname" value={{target_user.last_name}} />
+        </div>
+
+        <div class="pure-controls">
+            <input type="submit" class="pure-button" value="Submit"/>
+        </div>
     </form>
     <p id="outcome"></p>
 {% endblock %}
