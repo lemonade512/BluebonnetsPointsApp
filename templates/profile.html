@@ -3,9 +3,28 @@
 {% block title %}No Profile{% endblock %}
 {% block javascript %}
 <script>
+get_point_exceptions = function() {
+    $("#point-exceptions").empty();
+    var params = {
+        target_user_id: "{{ target_user.user_id }}",
+    };
+
+    var params_str = $.param(params);
+    $.get('/getpointexceptions?' + params_str, function(data) {
+        exceptions = JSON.parse(data);
+        $.each(exceptions, function(i, exception) {
+            $('#point-exceptions').append(
+                '<div>' +
+                    'Point Type: ' + exception.point_type + 'Points Needed: ' + exception.points_needed +
+                '</div>'
+            );
+        });
+    });
+}
+
 $(function () {
     $('#profile-form').submit(function (event) {
-        $.post('/updateuser', {
+        $.post($(this).attr('action'), {
             fname: $('input[name=fname]').val(),
             lname: $('input[name=lname]').val(),
             target_user_id: "{{ target_user.user_id }}",
@@ -18,6 +37,24 @@ $(function () {
         });
         event.preventDefault();
     });
+
+    $('#add-exception').submit(function (event) {
+        $.post($(this).attr('action'), {
+            point_type: $('input[name=type]').val(),
+            points_needed: $('input[name=num]').val(),
+            target_user_id: "{{ target_user.user_id }}",
+        }, function (data) {
+            $('#outcome').html('<span style="color: green">Successfully saved!</span>');
+            get_point_exceptions()
+        }).fail(function(data) {
+            console.log(data);
+            console.log("COOL");
+            $('#outcome').html('<span style="color: red">There was a problem!</span>');
+        });
+        event.preventDefault();
+    });
+
+    get_point_exceptions()
 });
 </script>
 {% endblock %}
@@ -44,4 +81,27 @@ $(function () {
         </div>
     </form>
     <p id="outcome"></p>
+
+    <div id="point-exceptions">
+    {% for exception in target_user.point_exceptions %}
+    <div>
+        Point Type: {{ exception.point_type }} Points Needed: {{ exception.points_needed }}
+    </div>
+    {% endfor %}
+    </div>
+    <form id="add-exception" method="post" action="/createpointexception" class="pure-form">
+        <div class="pure-control-group">
+            <label for="type">Point Type</label>
+            <input type="text" id="type" name="type" />
+        </div>
+
+        <div class="pure-control-group">
+            <label for="num">Points Required</label>
+            <input type="text" id="num" name="num" />
+        </div>
+
+        <div class="pure-controls">
+            <input type="submit" class="pure-button" value="Add" />
+        </div>
+    </form>
 {% endblock %}

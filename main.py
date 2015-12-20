@@ -6,7 +6,7 @@ import json
 from flask import Flask, request, redirect, url_for
 from google.appengine.api import users
 
-from models import UserData
+from models import UserData, PointException
 from utils import render_jinja_template
 from permissions import require_permission
 
@@ -130,6 +130,7 @@ def updateuser():
     user = UserData.get_user_from_id(data['target_user_id'])
     if not user:
         raise Exception("I don't know that person")
+
     user.first_name = data['fname']
     user.last_name = data['lname']
     if data['is_active'] == "true":
@@ -196,6 +197,49 @@ def getusers():
 
     json_data = json.dumps(data)
     return json_data
+
+@app.route('/getpointexceptions')
+def getpointexceptions():
+    # get param "target_user_id="
+    target_user_id = request.args.get("target_user_id")
+    user = UserData.get_user_from_id(target_user_id)
+    if not user:
+        raise Exception("I don't know that person")
+
+    data = []
+    for exc in user.point_exceptions:
+        data.append({
+            "point_type": exc.point_type,
+            "points_needed": exc.points_needed,
+        })
+
+    json_data = json.dumps(data)
+    return json_data
+
+@app.route('/createpointexception', methods=['POST'])
+def createpointexception():
+    data = request.form
+    user = UserData.get_user_from_id(data['target_user_id'])
+    if not user:
+        raise Exception("I don't know that person")
+
+    #TODO The flow of this code looks more complicated and confusing than it
+    # needs to be. Try to clean it up
+    p = None
+    for exc in user.point_exceptions:
+        if exc.point_type == data['point_type']:
+            p = exc
+    if not p:
+        p = PointException()
+        p.point_type = data.get('point_type', type=str)
+        p.points_needed = data.get('points_needed', type=int)
+        user.point_exceptions.append(p)
+    else:
+        p.points_needed = data.get('points_needed', type=int)
+    user.put()
+
+    return ('', '204')
+
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.debug)
 

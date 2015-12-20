@@ -1,19 +1,30 @@
 from google.appengine.ext import ndb
 from google.appengine.api import users
 
-# TODO I need to figure out how to store point requirements in a way that
-# officers can change them. One way would be to have a point requirements
-# property in the UserData and then any time an officer updates the default
-# point requirements it will update all of the member's point requirements
-# fields. Another option is to just have a python file that is used to store
-# the requirements. The downside with this is that I would have to deploy the
-# site every time they want to change the point requirements.
+
+#TODO do we actually need this?
+class PointType(ndb.Model):
+    name = ndb.StringProperty()
+
+
+class PointRequirement(ndb.Model):
+    """ A global requirement for the number of points needed for a point type
+
+    There should only ever be one of these for each point type. If someone
+    tries adding a point requirement with a type that already has a point
+    requirement it should cause an error.
+    """
+    point_type = ndb.StringProperty()
+    points_needed = ndb.IntegerProperty(indexed=False)
+
 
 class PointException(ndb.Model):
+    """ A user-specific point exception """
 
     # The type of points to make an exception for
     # TODO add a `choices` option to the string property depending on point
     # type options
+    #point_type = ndb.StructuredProperty(PointType, indexed=False)
     point_type = ndb.StringProperty(indexed=False)
 
     # The number of points that will actually be needed
@@ -110,8 +121,8 @@ class UserData(ndb.Model):
 class PointRecord(ndb.Model):
     user_data = ndb.KeyProperty(kind="UserData")
     event = ndb.KeyProperty(kind="Event")
+    point_type = ndb.KeyProperty(kind="PointType")
     points_earned = ndb.IntegerProperty()
-    point_type = ndb.StringProperty()
 
 
 class Event(ndb.Model):
