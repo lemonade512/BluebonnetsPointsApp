@@ -1,18 +1,46 @@
 {% extends "base.html" %}
 {% set active_page = "members" %}
 {% block title %}Members{% endblock %}
+{% block javascript %}
+<script>
+var get_users = function(filter) {
+    $("#users").empty();
+    var params = {
+        filter: filter
+    };
+
+    var params_str = $.param(params);
+    $.get("/getusers?" + params_str, function(data) {
+        data = JSON.parse(data);
+        $.each(data, function(i, user) {
+            $("#users").append(
+                '<div>' +
+                    '<a href="' + user.profile + '">' + user.fname + ' ' + user.lname + '</a>' +
+                '</div>'
+            );
+        });
+    });
+};
+
+$(document).ready(function() {
+    var default_selection = document.querySelector("#filter option[selected]").value;
+    get_users(default_selection);
+
+    $('#filter').change(function(e) {
+        get_users(this.value);
+    });
+});
+
+</script>
+{% endblock %}
 {% block content %}
     <h1> Members </h1>
-    Welcome to the members screen{% if user_data %} {{user_data.first_name}} {{user_data.last_name}} {% endif %}!
-    <div>
-        {% for user in users %}
-        <a href="/profile/{{user.user_id}}">{{ user.first_name }}</a>
-        {% endfor %}
-    </div>
-    {% if user_data %}
-    <a href={{logout_url}}>logout</a>
-    {% else %}
-    <a href={{login_url}}>login</a>
-    {% endif %}
+    Welcome to the members screen{% if user_data %} {{user_data.first_name}} {{user_data.last_name}}{% endif %}!
+    <select id="filter">
+        <option value="active" selected="selected">Active</option>
+        <option value="inactive">Inactive</option>
+        <option value="both">Both</option>
+    </select>
+    <div id="users"></div>
 {% endblock %}
 

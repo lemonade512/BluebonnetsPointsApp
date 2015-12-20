@@ -9,6 +9,7 @@ $(function () {
             fname: $('input[name=fname]').val(),
             lname: $('input[name=lname]').val(),
             target_user_id: "{{ target_user.user_id }}",
+            is_active: $("#active").is(":checked"),
         }, function (data) {
             $('#outcome').html('<span style="color: green">Successfully saved!</span>');
         }).fail(function() {
@@ -31,6 +32,11 @@ $(function () {
         <div class="pure-control-group">
             <label for="lname">Last Name</label>
             <input type="text" id="lname" name="lname" value={{target_user.last_name}} />
+        </div>
+
+        <div class="pure-control-group">
+            <label for="active">Active</label>
+            <input type="checkbox" id="active" name="active" {% if target_user.active %}checked{%endif%} />
         </div>
 
         <div class="pure-controls">

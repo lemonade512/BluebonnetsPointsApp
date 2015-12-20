@@ -1,6 +1,7 @@
 """`main` is the top level module for your Flask application."""
 
 import logging
+import json
 
 from flask import Flask, request, redirect, url_for
 from google.appengine.api import users
@@ -131,6 +132,10 @@ def updateuser():
         raise Exception("I don't know that person")
     user.first_name = data['fname']
     user.last_name = data['lname']
+    if data['is_active'] == "true":
+        user.active = True
+    else:
+        user.active = False
     user.put()
     return ('', '204')
 
@@ -151,6 +156,7 @@ def createuser():
     user_data.user_id = user.user_id()
     user_data.first_name = data['fname']
     user_data.last_name = data['lname']
+    user_data.active = True
     # TODO when we create a way to change permissions then this should not be
     # the default permission set
     user_data.user_permissions = ['user', 'officer']
@@ -164,5 +170,32 @@ def createuser():
     # the data if it wanted to.
     return ('', '204')
 
+@app.route('/getusers')
+def getusers():
+    # get param "filter="
+    user_filter = request.args.get("filter")
+    if user_filter not in ["active", "inactive", "both"]:
+        raise Exception(user_filter + " is not a valid filter value")
+
+    if user_filter == "active":
+        q = UserData.query().filter(UserData.active == True)
+    elif user_filter == "inactive":
+        q = UserData.query().filter(UserData.active == False)
+    else:
+        q =  UserData.query()
+
+    q = q.order(UserData.first_name)
+
+    data = []
+    for u in q:
+        data.append({
+            "fname": u.first_name,
+            "lname": u.last_name,
+            "profile": "/profile/" + u.user_id
+        })
+
+    json_data = json.dumps(data)
+    return json_data
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.debug)
+
