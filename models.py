@@ -66,6 +66,9 @@ class UserData(ndb.Model):
         # the id before anything else.
         # TODO Instead we could save the user_id and key as 'id_' + user.user_id()
         # (i.e. we have the id_ prefix and can check for that in the url_segment)
+        if url_segment == "me":
+            return UserData.get_user_from_id(users.get_current_user().user_id())
+
         user_data = UserData.get_user_from_id(url_segment)
         if not user_data:
             user_data = UserData.get_from_username(url_segment)
