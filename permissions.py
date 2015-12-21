@@ -10,13 +10,13 @@ def require_permission(perm):
         def wrapper(*args, **kwargs):
             user_data = UserData.get_current_user_data()
             if not user_data:
-                return render_jinja_template('nologin.html')
+                return render_jinja_template('nologin.html'), 403
 
             if not check_perms(user_data, perm):
                 template_values = {
                     'perms': [perm],
                 }
-                return render_jinja_template('nopermission.html', template_values)
+                return render_jinja_template('nopermission.html', template_values), 403
             return f(*args, **kwargs)
         return wrapper
     return decorator
