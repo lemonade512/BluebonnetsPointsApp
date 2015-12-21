@@ -38,7 +38,7 @@ handlers:
 
 - url: /favicon.ico
   static_files: static/images/favicon.ico
-  upload: favicon.ico
+  upload: static/images/favicon.ico
 
 - url: /_ah/queue/deferred
   script: google.appengine.ext.deferred.deferred.application

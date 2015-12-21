@@ -229,6 +229,7 @@ class ExceptionAPI(Resource):
 
         return jsonify(**data)
 
+    # TODO delete needs to be idempotent
     def delete(self, user_id, index):
         user = UserData.get_user_from_id(user_id)
         if not user:
