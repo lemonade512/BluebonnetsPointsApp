@@ -5,10 +5,12 @@ import json
 
 from flask import Flask, request, redirect, url_for
 from google.appengine.api import users
+from google.appengine.ext import deferred
 
 from models import UserData, PointException
 from utils import render_jinja_template
 from permissions import require_permission
+from update_schema import run_update_schema
 
 # Create the flask app
 app = Flask(__name__)
@@ -253,6 +255,15 @@ def deletepointexception():
     user.put()
 
     return ('', '204')
+
+# *************************************************************************** #
+#                               ADMIN                                         #
+# *************************************************************************** #
+
+@app.route("/admin/updateschema")
+def updateschema():
+    deferred.defer(run_update_schema)
+    return 'Schema migration successfully initiated.'
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.debug)
