@@ -13,7 +13,6 @@ api_version: 1
 threadsafe: yes
 
 skip_files:
-- ^(.*/)?lib/google_appengine/.*$
 - ^(.*/)?\.git/.*$
 - ^(.*/)?.*\.py[co]$
 
