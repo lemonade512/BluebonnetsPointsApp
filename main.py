@@ -3,7 +3,8 @@
 import logging
 import json
 
-from flask import Flask, request, redirect, url_for
+from flask import Flask, request, redirect, url_for, jsonify
+from flask_restful import Resource, Api
 from google.appengine.api import users
 from google.appengine.ext import deferred
 
@@ -14,6 +15,7 @@ from update_schema import run_update_schema
 
 # Create the flask app
 app = Flask(__name__)
+api = Api(app)
 
 @app.route('/')
 def index():
@@ -47,11 +49,10 @@ def members():
 def profile(user_url_segment):
     target_user = UserData.get_from_url_segment(user_url_segment)
     if target_user is None:
-        # TODO should I make this template more informative? Right now it just
-        # says a user could not be found, not which user could not be found.
-        # Although, I really don't know how to determine the user if the id
-        # could not be found.
-        return render_jinja_template("noprofile.html"), 404
+        template_values = {
+            "target_user": user_url_segment,
+        }
+        return render_jinja_template("noprofile.html", template_values), 404
 
     if target_user.username != user_url_segment:
         return redirect('/profile/{0}'.format(target_user.username))
@@ -60,14 +61,6 @@ def profile(user_url_segment):
         'target_user': target_user,
     }
     return render_jinja_template("profile.html", template_values)
-
-# NOTE the route decorator must be first so it decorates the function returned by
-# any decorators following.
-@app.route('/hello-perm')
-@require_permission('officer')
-def hello_perm():
-    """ Check if officer then show page. """
-    return render_jinja_template("hello.html")
 
 @app.route('/login')
 def login():
@@ -123,138 +116,175 @@ def application_error(e):
 #                               API                                           #
 # *************************************************************************** #
 
-# TODO I am not following good REST standards. I should change that
+class UserListAPI(Resource):
 
-@app.route('/updateuser', methods=["POST"])
-def updateuser():
-    # TODO check that the current user is either the target user or an officer
-    data = request.form
-    user = UserData.get_user_from_id(data['target_user_id'])
-    if not user:
-        raise Exception("I don't know that person")
+    def get(self):
+        user_filter = request.args.get("filter", "both")
+        if user_filter not in ["active", "inactive", "both"]:
+            raise Exception(user_filter + " is not a valid filter value")
 
-    user.first_name = data['fname']
-    user.last_name = data['lname']
-    if data['is_active'] == "true":
-        user.active = True
-    else:
-        user.active = False
-    user.put()
-    return ('', '204')
+        if user_filter == "active":
+            q = UserData.query().filter(UserData.active == True)
+        elif user_filter == "inactive":
+            q = UserData.query().filter(UserData.active == False)
+        else:
+            q =  UserData.query()
 
-@app.route('/createuser', methods=["POST"])
-def createuser():
-    data = request.form
-    user = users.get_current_user()
-    if not user:
-        raise Exception("Where is the user?")
+        q = q.order(UserData.first_name)
 
-    # NOTE: I am using the user.user_id() as the UserData id so that I can
-    # query for UserData with strong consistency. I believe this works as
-    # intended and the only issue I can think of is if I decide to allow
-    # logging in from something other than a google account (which would mean
-    # the user is not connected to a google user with a user_id)
-    user_data = UserData(id=user.user_id())
-    user_data.user = user
-    user_data.user_id = user.user_id()
-    user_data.first_name = data['fname']
-    user_data.last_name = data['lname']
-    user_data.active = True
-    # TODO when we create a way to change permissions then this should not be
-    # the default permission set
-    user_data.user_permissions = ['user', 'officer']
-    #user_data.user_permissions = ['user']
-    user_data.put()
+        data = {"users":[]}
+        for u in q:
+            data['users'].append({
+                "fname": u.first_name,
+                "lname": u.last_name,
+                "profile": "/profile/" + u.user_id
+            })
 
-    # Return a '204: No Data' response. I believe this is how you handle
-    # making server requests but I'm not sure...
-    # I have figured out that the data gets passed to the client side handler
-    # so it won't do anything with the browser but jquery could do something with
-    # the data if it wanted to.
-    return ('', '204')
+        return jsonify(**data)
 
-@app.route('/getusers')
-def getusers():
-    # get param "filter="
-    user_filter = request.args.get("filter")
-    if user_filter not in ["active", "inactive", "both"]:
-        raise Exception(user_filter + " is not a valid filter value")
+    def post(self):
+        data = request.form
+        user = users.get_current_user()
+        if not user:
+            raise Exception("Where is the user?")
 
-    if user_filter == "active":
-        q = UserData.query().filter(UserData.active == True)
-    elif user_filter == "inactive":
-        q = UserData.query().filter(UserData.active == False)
-    else:
-        q =  UserData.query()
+        # NOTE: I am using the user.user_id() as the UserData id so that I can
+        # query for UserData with strong consistency. I believe this works as
+        # intended and the only issue I can think of is if I decide to allow
+        # logging in from something other than a google account (which would mean
+        # the user is not connected to a google user with a user_id)
+        user_data = UserData(id=user.user_id())
+        user_data.user = user
+        user_data.user_id = user.user_id()
+        user_data.first_name = data['fname']
+        user_data.last_name = data['lname']
+        user_data.active = True
+        # TODO when we create a way to change permissions then this should not be
+        # the default permission set
+        user_data.user_permissions = ['user', 'officer']
+        #user_data.user_permissions = ['user']
+        user_data.put()
 
-    q = q.order(UserData.first_name)
+        response = jsonify()
+        response.status_code = 201
+        response.headers['location'] = '/users/' + str(user_data.user_id)
+        return response
 
-    data = []
-    for u in q:
-        data.append({
-            "fname": u.first_name,
-            "lname": u.last_name,
-            "profile": "/profile/" + u.user_id
-        })
 
-    json_data = json.dumps(data)
-    return json_data
+# TODO possibly allow for using username in place of user_id
+class UserAPI(Resource):
 
-@app.route('/getpointexceptions')
-def getpointexceptions():
-    # get param "target_user_id="
-    target_user_id = request.args.get("target_user_id")
-    user = UserData.get_user_from_id(target_user_id)
-    if not user:
-        raise Exception("I don't know that person")
+    def get(self, user_id):
+        user = UserData.get_user_from_id(user_id)
+        data = {
+            "fname": user.first_name,
+            "lname": user.last_name,
+            "profile": "/profile/" + user.user_id,
+            "point_exceptions": [{
+                "point_type": exc.point_type,
+                "points_needed": exc.points_needed,
+            } for exc in user.point_exceptions],
+        }
 
-    data = []
-    for exc in user.point_exceptions:
-        data.append({
+        return jsonify(**data)
+
+    def put(self, user_id):
+        # TODO check that the current user is either the target user or an officer
+        user = UserData.get_user_from_id(user_id)
+        if not user:
+            raise Exception("I don't know that person")
+
+        data = request.form
+        user.first_name = data['fname']
+        user.last_name = data['lname']
+        if data['is_active'] == "true":
+            user.active = True
+        else:
+            user.active = False
+        user.put()
+
+        response = jsonify()
+        response.status_code = 201
+        response.headers['location'] = '/users/' + str(user.user_id)
+        return response
+
+
+class ExceptionAPI(Resource):
+
+    def get(self, user_id, index):
+        user = UserData.get_user_from_id(user_id)
+        if not user:
+            raise Exception("I don't know that person")
+
+        if index > len(user.point_exceptions):
+            response = jsonify(message="Resource does not exist")
+            response.status_code = 404
+            return response
+
+        exc = user.point_exceptions[index]
+        data = {
             "point_type": exc.point_type,
             "points_needed": exc.points_needed,
-            "index": user.point_exceptions.index(exc),
-        })
+        }
 
-    json_data = json.dumps(data)
-    return json_data
+        return jsonify(**data)
 
-@app.route('/createpointexception', methods=['POST'])
-def createpointexception():
-    data = request.form
-    user = UserData.get_user_from_id(data['target_user_id'])
-    if not user:
-        raise Exception("I don't know that person")
+    def delete(self, user_id, index):
+        user = UserData.get_user_from_id(user_id)
+        if not user:
+            raise Exception("I don't know that person")
 
-    #TODO The flow of this code looks more complicated and confusing than it
-    # needs to be. Try to clean it up
-    p = None
-    for exc in user.point_exceptions:
-        if exc.point_type == data['point_type']:
-            p = exc
-    if not p:
-        p = PointException()
-        p.point_type = data.get('point_type', type=str)
-        p.points_needed = data.get('points_needed', type=int)
-        user.point_exceptions.append(p)
-    else:
-        p.points_needed = data.get('points_needed', type=int)
-    user.put()
+        del user.point_exceptions[index]
+        user.put()
 
-    return ('', '204')
+        return ('', '204')
 
-@app.route('/deletepointexception', methods=['POST'])
-def deletepointexception():
-    data = request.form
-    target_user_id = data["target_user_id"]
-    user = UserData.get_user_from_id(target_user_id)
-    if not user:
-        raise Exception("I don't know that person")
 
-    del user.point_exceptions[int(data['index'])]
-    user.put()
+class ExceptionListAPI(Resource):
 
-    return ('', '204')
+    def get(self, user_id):
+        user = UserData.get_user_from_id(user_id)
+        data = {
+            "point_exceptions": [{
+                "point_type": exc.point_type,
+                "points_needed": exc.points_needed,
+            } for exc in user.point_exceptions],
+        }
+
+        return jsonify(**data)
+
+    def post(self, user_id):
+        data = request.form
+        user = UserData.get_user_from_id(data['target_user_id'])
+        if not user:
+            raise Exception("I don't know that person")
+
+        #TODO The flow of this code looks more complicated and confusing than it
+        # needs to be. Try to clean it up
+        p = None
+        for exc in user.point_exceptions:
+            if exc.point_type == data['point_type']:
+                p = exc
+        if not p:
+            p = PointException()
+            p.point_type = data.get('point_type', type=str)
+            p.points_needed = data.get('points_needed', type=int)
+            user.point_exceptions.append(p)
+        else:
+            p.points_needed = data.get('points_needed', type=int)
+        user.put()
+
+        response = jsonify()
+        response.status_code = 201
+        response.headers['location'] = "/users/" + user.user_id + "/point-exceptions/" + str(len(user.point_exceptions) - 1)
+        return response
+
+
+api.add_resource(UserListAPI, '/users', endpoint='users')
+api.add_resource(UserAPI, '/users/<string:user_id>', endpoint='user')
+api.add_resource(ExceptionListAPI, '/users/<string:user_id>/point-exceptions')
+api.add_resource(ExceptionAPI, '/users/<string:user_id>/point-exceptions/<int:index>')
+
 
 # *************************************************************************** #
 #                               ADMIN                                         #

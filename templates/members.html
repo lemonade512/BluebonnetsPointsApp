@@ -10,9 +10,8 @@ var get_users = function(filter) {
     };
 
     var params_str = $.param(params);
-    $.get("/getusers?" + params_str, function(data) {
-        data = JSON.parse(data);
-        $.each(data, function(i, user) {
+    $.get("/users?" + params_str, function(data) {
+        $.each(data.users, function(i, user) {
             $("#users").append(
                 '<div>' +
                     '<a href="' + user.profile + '">' + user.fname + ' ' + user.lname + '</a>' +

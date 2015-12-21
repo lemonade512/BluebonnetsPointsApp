@@ -4,13 +4,15 @@
 {% block javascript %}
 <script>
 remove_exception = function(i) {
-    $.post('/deletepointexception', {
-        target_user_id: "{{ target_user.user_id }}",
-        index: i,
-    }, function (data) {
-        $('#outcome').html('<span style="color: green">Successfully deleted!</span>');
-        get_point_exceptions()
+    $.ajax({
+        url: '/users/{{target_user.user_id}}/point-exceptions/' + i,
+        type: 'DELETE',
+        success: function() {
+            $('#outcome').html('<span style="color: green">Successfully deleted!</span>');
+            get_point_exceptions()
+        }
     }).fail(function() {
+        // TODO This should be more user friendly
         $('#outcome').html('<span style="color: red">There was a problem!</span>');
     });
 }
@@ -22,13 +24,12 @@ get_point_exceptions = function() {
     };
 
     var params_str = $.param(params);
-    $.get('/getpointexceptions?' + params_str, function(data) {
-        exceptions = JSON.parse(data);
-        $.each(exceptions, function(i, exception) {
+    $.get('/users/{{target_user.user_id}}', function(data) {
+        $.each(data.point_exceptions, function(i, exception) {
             div = $("<div></div>").text('Point Type: ' + exception.point_type
                                         + ' Points Needed: ' + exception.points_needed);
             btn = $('<button />').text("Delete").click(function() {
-                remove_exception(exception.index);
+                remove_exception(i);
             });
             div.append(btn);
 
@@ -39,14 +40,22 @@ get_point_exceptions = function() {
 
 $(function () {
     $('#profile-form').submit(function (event) {
-        $.post($(this).attr('action'), {
+        var data = {
             fname: $('input[name=fname]').val(),
             lname: $('input[name=lname]').val(),
             target_user_id: "{{ target_user.user_id }}",
             is_active: $("#active").is(":checked"),
-        }, function (data) {
-            $('#outcome').html('<span style="color: green">Successfully saved!</span>');
-        }).fail(function() {
+        }
+
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'PUT',
+            data: data,
+            success: function() {
+                $('#outcome').html('<span style="color: green">Successfully saved!</span>');
+            }
+        }).fail(function(resp) {
+            console.log(resp);
             // TODO This should be more user friendly
             $('#outcome').html('<span style="color: red">There was a problem!</span>');
         });
@@ -73,7 +82,7 @@ $(function () {
 {% endblock %}
 {% block content %}
     <h2> User Profile </h2>
-    <form id="profile-form" method="post" action="/updateuser" class="pure-form pure-form-aligned">
+    <form id="profile-form" method="put" action="/users/{{target_user.user_id}}" class="pure-form pure-form-aligned">
         <div class="pure-control-group">
             <label for="fname">First Name</label>
             <input type="text" id="fname" name="fname" value={{target_user.first_name}} />
@@ -98,7 +107,7 @@ $(function () {
     <div id="point-exceptions"></div>
 
     <h2>Point Reductions</h2>
-    <form id="add-exception" method="post" action="/createpointexception" class="pure-form pure-form-aligned">
+    <form id="add-exception" method="post" action="/users/{{target_user.user_id}}/point-exceptions" class="pure-form pure-form-aligned">
         <div class="pure-control-group">
             <label for="type">Point Type</label>
             <input type="text" id="type" name="type" />
