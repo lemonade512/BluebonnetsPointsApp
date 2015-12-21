@@ -10,7 +10,7 @@ from google.appengine.ext import deferred
 
 from models import UserData, PointException
 from utils import render_jinja_template
-from permissions import require_permission
+from permissions import require_permission, require_admin
 from update_schema import run_update_schema
 
 # Create the flask app
@@ -22,12 +22,9 @@ def index():
     return render_jinja_template("index.html")
 
 @app.route('/admin')
+@require_admin
 def admin():
     return render_jinja_template("admin.html")
-
-@app.route('/hello')
-def hello():
-    return render_jinja_template("hello.html")
 
 @app.route('/members')
 @require_permission('officer')

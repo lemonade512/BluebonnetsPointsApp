@@ -1,3 +1,5 @@
+from google.appengine.api import users
+
 from models import UserData
 from functools import wraps
 
@@ -26,4 +28,16 @@ def check_perms(user_data, perm):
         return True
 
     return False
+
+def require_admin(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if not users.is_current_user_admin():
+            template_values = {
+                'perms': ['admin'],
+            }
+            return render_jinja_template('nopermission.html', template_values), 403
+
+        return f(*args, **kwargs)
+    return wrapper
 
