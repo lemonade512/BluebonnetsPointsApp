@@ -13,9 +13,4 @@
     <p>
         Welcome to the main page{% if user_data %} {{user_data.first_name}}{% endif %}!
     </p>
-    {% if user_data %}
-        <a href={{logout_url}}>Logout</a>
-    {% else %}
-        <a href={{login_url}}>Login</a>
-    {% endif %}
 {% endblock %}
