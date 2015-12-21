@@ -106,7 +106,10 @@ def page_not_found(e):
 @app.errorhandler(500)
 def application_error(e):
     """Return a custom 500 error."""
-    return 'Sorry, unexpected error: {}'.format(e), 500
+    template_values = {
+        'msg': "Sorry, unexpected error: {}".format(e)
+    }
+    return render_jinja_template("500.html", template_values), 500
 
 
 # *************************************************************************** #
