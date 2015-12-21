@@ -3,6 +3,18 @@
 {% block title %}No Profile{% endblock %}
 {% block javascript %}
 <script>
+remove_exception = function(i) {
+    $.post('/deletepointexception', {
+        target_user_id: "{{ target_user.user_id }}",
+        index: i,
+    }, function (data) {
+        $('#outcome').html('<span style="color: green">Successfully deleted!</span>');
+        get_point_exceptions()
+    }).fail(function() {
+        $('#outcome').html('<span style="color: red">There was a problem!</span>');
+    });
+}
+
 get_point_exceptions = function() {
     $("#point-exceptions").empty();
     var params = {
@@ -13,11 +25,14 @@ get_point_exceptions = function() {
     $.get('/getpointexceptions?' + params_str, function(data) {
         exceptions = JSON.parse(data);
         $.each(exceptions, function(i, exception) {
-            $('#point-exceptions').append(
-                '<div>' +
-                    'Point Type: ' + exception.point_type + 'Points Needed: ' + exception.points_needed +
-                '</div>'
-            );
+            div = $("<div></div>").text('Point Type: ' + exception.point_type
+                                        + ' Points Needed: ' + exception.points_needed);
+            btn = $('<button />').text("Delete").click(function() {
+                remove_exception(exception.index);
+            });
+            div.append(btn);
+
+            $('#point-exceptions').append(div);
         });
     });
 }
@@ -47,8 +62,6 @@ $(function () {
             $('#outcome').html('<span style="color: green">Successfully saved!</span>');
             get_point_exceptions()
         }).fail(function(data) {
-            console.log(data);
-            console.log("COOL");
             $('#outcome').html('<span style="color: red">There was a problem!</span>');
         });
         event.preventDefault();
@@ -59,7 +72,7 @@ $(function () {
 </script>
 {% endblock %}
 {% block content %}
-    <h1> User Profile </h1>
+    <h2> User Profile </h2>
     <form id="profile-form" method="post" action="/updateuser" class="pure-form pure-form-aligned">
         <div class="pure-control-group">
             <label for="fname">First Name</label>
@@ -82,14 +95,10 @@ $(function () {
     </form>
     <p id="outcome"></p>
 
-    <div id="point-exceptions">
-    {% for exception in target_user.point_exceptions %}
-    <div>
-        Point Type: {{ exception.point_type }} Points Needed: {{ exception.points_needed }}
-    </div>
-    {% endfor %}
-    </div>
-    <form id="add-exception" method="post" action="/createpointexception" class="pure-form">
+    <div id="point-exceptions"></div>
+
+    <h2>Point Reductions</h2>
+    <form id="add-exception" method="post" action="/createpointexception" class="pure-form pure-form-aligned">
         <div class="pure-control-group">
             <label for="type">Point Type</label>
             <input type="text" id="type" name="type" />

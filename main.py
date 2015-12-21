@@ -211,6 +211,7 @@ def getpointexceptions():
         data.append({
             "point_type": exc.point_type,
             "points_needed": exc.points_needed,
+            "index": user.point_exceptions.index(exc),
         })
 
     json_data = json.dumps(data)
@@ -236,6 +237,19 @@ def createpointexception():
         user.point_exceptions.append(p)
     else:
         p.points_needed = data.get('points_needed', type=int)
+    user.put()
+
+    return ('', '204')
+
+@app.route('/deletepointexception', methods=['POST'])
+def deletepointexception():
+    data = request.form
+    target_user_id = data["target_user_id"]
+    user = UserData.get_user_from_id(target_user_id)
+    if not user:
+        raise Exception("I don't know that person")
+
+    del user.point_exceptions[int(data['index'])]
     user.put()
 
     return ('', '204')
