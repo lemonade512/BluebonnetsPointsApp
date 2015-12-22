@@ -138,6 +138,9 @@ class UserListAPI(Resource):
                 "fname": u.first_name,
                 "lname": u.last_name,
                 "active": u.active,
+                "grad_year": u.graduation_year,
+                "grad_semester": u.graduation_semester,
+                "classification": u.classification,
                 "profile": "/profile/" + u.user_id,
             })
 
@@ -202,6 +205,9 @@ class UserAPI(Resource):
             user.active = True
         else:
             user.active = False
+        user.classification = data['classification']
+        user.graduation_semester = data['grad_semester']
+        user.graduation_year = data.get('grad_year', type=int)
         user.put()
 
         response = jsonify()

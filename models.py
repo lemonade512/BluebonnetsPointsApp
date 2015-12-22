@@ -52,6 +52,17 @@ class UserData(ndb.Model):
     # available in the datastore if they are needed again)
     active = ndb.BooleanProperty()
 
+    # What year the member is currently classified as (freshman, ...)
+    classification = ndb.StringProperty(
+        choices=['freshman', 'sophomore', 'junior', 'senior'])
+
+    # The semester a member will be graduation (spring, fall)
+    graduation_semester = ndb.StringProperty(
+        choices=['spring', 'fall'])
+
+    # The year a member is graduating (2016, 2017, ...)
+    graduation_year = ndb.IntegerProperty()
+
     # Exceptions to the number of points a member needs
     point_exceptions = ndb.StructuredProperty(PointException, repeated=True)
 

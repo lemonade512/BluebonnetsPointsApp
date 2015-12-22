@@ -59,6 +59,9 @@ $(function () {
             fname: $('input[name=fname]').val(),
             lname: $('input[name=lname]').val(),
             target_user_id: "{{ target_user.user_id }}",
+            classification: $("#classification")[0].value,
+            grad_semester: $("#grad-semester")[0].value,
+            grad_year: $("#grad-year")[0].value,
             is_active: $("#active").is(":checked"),
         }
 
@@ -100,12 +103,31 @@ $(function () {
     <form id="profile-form" method="put" action="/users/{{target_user.user_id}}" class="pure-form pure-form-aligned">
         <div class="pure-control-group">
             <label for="fname">First Name</label>
-            <input type="text" id="fname" name="fname" value={{target_user.first_name}} />
+            <input class="pure-u-1-2" type="text" id="fname" name="fname" value={{target_user.first_name}} />
         </div>
 
         <div class="pure-control-group">
             <label for="lname">Last Name</label>
-            <input type="text" id="lname" name="lname" value={{target_user.last_name}} />
+            <input class="pure-u-1-2" type="text" id="lname" name="lname" value={{target_user.last_name}} />
+        </div>
+
+        <div class="pure-control-group">
+            <label for="classification">Classification</label>
+            <select class="pure-u-1-2" id="classification" name="classification">
+                <option value="freshman" {% if target_user.classification == "freshman" %}selected{%endif%}>Freshman</option>
+                <option value="sophomore"{% if target_user.classification == "sophomore" %}selected{%endif%}>Sophomore</option>
+                <option value="junior" {% if target_user.classification == "junior" %}selected{%endif%}>Junior</option>
+                <option value="senior" {% if target_user.classification == "senior" %}selected{%endif%}>Senior</option>
+            </select>
+        </div>
+
+        <div class="pure-control-group">
+            <label for="grad-semester">Graduation Semester</label>
+            <select class="pure-u-1-4" id="grad-semester" name="grad-semester">
+                <option value="spring" {% if target_user.graduation_semester == "spring" %}selected{%endif%}>Spring</option>
+                <option value="fall" {% if target_user.graduation_semester == "fall" %}selected{%endif%}>Fall</option>
+            </select>
+            <input class="pure-u-1-4" type="text" id="grad-year" name="grad-year" value={{target_user.graduation_year}} />
         </div>
 
         <div class="pure-control-group">
@@ -114,7 +136,7 @@ $(function () {
         </div>
 
         <div class="pure-controls">
-            <input type="submit" class="pure-button" value="Submit"/>
+            <input type="submit" class="pure-button" value="Save"/>
         </div>
     </form>
     <p id="outcome"></p>

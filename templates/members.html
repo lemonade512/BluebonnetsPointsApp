@@ -3,6 +3,10 @@
 {% block title %}Members{% endblock %}
 {% block javascript %}
 <script>
+var caps = function(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 var get_users = function(filter) {
     status_map = {true: 'Active', false: 'Inactive'};
 
@@ -14,7 +18,7 @@ var get_users = function(filter) {
         $("#users").empty();
         $("#users").append(
             '<thead>' +
-            '<th>#</th><th>Name</th><th>Status</th>' +
+            '<th>#</th><th>Name</th><th>Status</th><th>Classification</th><th>Graduating</th>' +
             '</thead>'
         )
         $.each(data.users, function(i, user) {
@@ -23,6 +27,8 @@ var get_users = function(filter) {
                 '<td>' + (i+1) + '</td>' +
                 '<td><a href="' + user.profile + '">' + user.fname + ' ' + user.lname + '</a>' + '</td>' +
                 '<td align="center">' + status_map[user.active] + '</td>' +
+                '<td align="center">' + caps(user.classification) + '</td>' +
+                '<td align="center">' + caps(user.grad_semester) + ' ' + user.grad_year + '</td>' +
                 '</tr>'
             );
         });
@@ -43,13 +49,11 @@ $(document).ready(function() {
 {% block content %}
     <h1> Members </h1>
     <p class="center-text">
-        <label class="dropdown">
-            <select id="filter">
-                <option value="active" selected="selected">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="both">Both</option>
-            </select>
-        </label>
+        <select id="filter">
+            <option value="active" selected="selected">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="both">Both</option>
+        </select>
     </p>
     <table id="users" class="pure-table centered">
     </table>
