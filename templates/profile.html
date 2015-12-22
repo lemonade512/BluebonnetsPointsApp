@@ -35,12 +35,17 @@ get_point_exceptions = function() {
             console.log("Adding row");
             tr = $("<tr></tr>");
             tr.append("<td>" + exception.point_type + "</td><td align='center'>" + exception.points_needed + "</td>");
-            btn = $("<td></td>").append(
-                $('<button />').text("Delete").click(function() {
-                    remove_exception(i);
-                })
-            );
-            tr.append(btn);
+
+            icon = $("<i class='fa fa-trash' />");
+            td = $("<td align='center'></td>");
+            btn = $("<button class='pure-button' />").click(function() {
+                remove_exception(i);
+            });
+
+            btn.append(icon);
+            td.append(btn);
+
+            tr.append(td);
             tbody.append(tr);
         });
         table.append(tbody)
