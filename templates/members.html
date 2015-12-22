@@ -4,18 +4,26 @@
 {% block javascript %}
 <script>
 var get_users = function(filter) {
-    $("#users").empty();
+    status_map = {true: 'Active', false: 'Inactive'};
+
     var params = {
         filter: filter
     };
-
     var params_str = $.param(params);
     $.get("/users?" + params_str, function(data) {
+        $("#users").empty();
+        $("#users").append(
+            '<thead>' +
+            '<th>#</th><th>Name</th><th>Status</th>' +
+            '</thead>'
+        )
         $.each(data.users, function(i, user) {
             $("#users").append(
-                '<div>' +
-                    '<a href="' + user.profile + '">' + user.fname + ' ' + user.lname + '</a>' +
-                '</div>'
+                '<tr>' +
+                '<td>' + (i+1) + '</td>' +
+                '<td><a href="' + user.profile + '">' + user.fname + ' ' + user.lname + '</a>' + '</td>' +
+                '<td align="center">' + status_map[user.active] + '</td>' +
+                '</tr>'
             );
         });
     });
@@ -34,12 +42,16 @@ $(document).ready(function() {
 {% endblock %}
 {% block content %}
     <h1> Members </h1>
-    Welcome to the members screen{% if user_data %} {{user_data.first_name}} {{user_data.last_name}}{% endif %}!
-    <select id="filter">
-        <option value="active" selected="selected">Active</option>
-        <option value="inactive">Inactive</option>
-        <option value="both">Both</option>
-    </select>
-    <div id="users"></div>
+    <p class="center-text">
+        <label class="dropdown">
+            <select id="filter">
+                <option value="active" selected="selected">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="both">Both</option>
+            </select>
+        </label>
+    </p>
+    <table id="users" class="pure-table centered">
+    </table>
 {% endblock %}
 

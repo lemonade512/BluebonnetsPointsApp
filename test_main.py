@@ -82,7 +82,7 @@ class MainTestCase(unittest.TestCase):
         self.loginUser(user_id='200')
         response = self.app.get('/members')
         self.assertEqual(200, response.status_code)
-        s = "Welcome to the members screen Bob Joe!"
+        s = "Filter by active status:"
         self.assertIn(s, response.data, msg="Does not show proper welcome")
 
     def test_admin_page_off_limits(self):

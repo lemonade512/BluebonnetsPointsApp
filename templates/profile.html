@@ -18,23 +18,33 @@ remove_exception = function(i) {
 }
 
 get_point_exceptions = function() {
-    $("#point-exceptions").empty();
     var params = {
         target_user_id: "{{ target_user.user_id }}",
     };
 
     var params_str = $.param(params);
     $.get('/users/{{target_user.user_id}}', function(data) {
-        $.each(data.point_exceptions, function(i, exception) {
-            div = $("<div></div>").text('Point Type: ' + exception.point_type
-                                        + ' Points Needed: ' + exception.points_needed);
-            btn = $('<button />').text("Delete").click(function() {
-                remove_exception(i);
-            });
-            div.append(btn);
+        $("#point-exceptions").empty();
+        table = $("<table class='pure-table right'></table>");
+        table.append($("<thead></thead>")
+                .append($("<tr></tr>")
+                    .append("<th>Type</th><th># Required</th><th>Delete</th>")));
+        tbody = $("<tbody></tbody>");
 
-            $('#point-exceptions').append(div);
+        $.each(data.point_exceptions, function(i, exception) {
+            console.log("Adding row");
+            tr = $("<tr></tr>");
+            tr.append("<td>" + exception.point_type + "</td><td align='center'>" + exception.points_needed + "</td>");
+            btn = $("<td></td>").append(
+                $('<button />').text("Delete").click(function() {
+                    remove_exception(i);
+                })
+            );
+            tr.append(btn);
+            tbody.append(tr);
         });
+        table.append(tbody)
+        $('#point-exceptions').append(table);
     });
 }
 
@@ -104,9 +114,9 @@ $(function () {
     </form>
     <p id="outcome"></p>
 
-    <div id="point-exceptions"></div>
-
     <h2>Point Reductions</h2>
+    <div id="point-exceptions" style="padding-bottom: 15px;"></div>
+
     <form id="add-exception" method="post" action="/users/{{target_user.user_id}}/point-exceptions" class="pure-form pure-form-aligned">
         <div class="pure-control-group">
             <label for="type">Point Type</label>

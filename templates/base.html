@@ -22,7 +22,13 @@
             {% endblock %}
 
         </div>
-        <div id="content">{% block content %}{% endblock %}</div>
+        <div class="pure-g">
+            <div id="leftcol" class="pure-u-1-3"></div>
+            <div id="content" class="pure-u centered">
+                {% block content %}{% endblock %}
+            </div>
+            <div id="rightcol" class="pure-u-1-3"></div>
+        </div>
         <div id="footer">
             {% block footer %}
             &copy; Copyright 2015 by TX Bluebonnets

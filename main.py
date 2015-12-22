@@ -137,7 +137,8 @@ class UserListAPI(Resource):
             data['users'].append({
                 "fname": u.first_name,
                 "lname": u.last_name,
-                "profile": "/profile/" + u.user_id
+                "active": u.active,
+                "profile": "/profile/" + u.user_id,
             })
 
         return jsonify(**data)
