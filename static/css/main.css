@@ -5,8 +5,10 @@
     background-color: #dddddd;
 }
 
-.home-menu ul {
-    float: right;
+@media (min-width: 48em) {
+    .home-menu ul {
+        float: right;
+    }
 }
 
 #users a:link {
@@ -46,6 +48,14 @@
 }
 .center-text:before {
     text-align: left;
+}
+
+.rounded {
+    border-radius: 5px;
+}
+
+.padded {
+    margin-top: 10px;
 }
 
 select {

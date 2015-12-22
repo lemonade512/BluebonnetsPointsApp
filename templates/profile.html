@@ -25,7 +25,7 @@ get_point_exceptions = function() {
     var params_str = $.param(params);
     $.get('/users/{{target_user.user_id}}', function(data) {
         $("#point-exceptions").empty();
-        table = $("<table class='pure-table right'></table>");
+        table = $("<table class='pure-table centered'></table>");
         table.append($("<thead></thead>")
                 .append($("<tr></tr>")
                     .append("<th>Type</th><th># Required</th><th>Delete</th>")));
@@ -38,7 +38,7 @@ get_point_exceptions = function() {
 
             icon = $("<i class='fa fa-trash' />");
             td = $("<td align='center'></td>");
-            btn = $("<button class='pure-button' />").click(function() {
+            btn = $("<button class='pure-button rounded' />").click(function() {
                 remove_exception(i);
             });
 
