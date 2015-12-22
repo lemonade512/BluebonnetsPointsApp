@@ -1,4 +1,4 @@
-.PHONY: serve deploy serve-clean
+.PHONY: serve deploy serve-clean test
 
 serve:
 	dev_appserver.py .
@@ -8,3 +8,6 @@ serve-clean:
 
 deploy:
 	appcfg.py -A bluebonnets-test update .
+
+test:
+	python test_runner.py ~/google_appengine .
