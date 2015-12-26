@@ -1,3 +1,5 @@
+@import url("/static/css/progressbar.css");
+
 html, body {
     height: 100%;
 }
@@ -65,8 +67,8 @@ html, body {
     margin-bottom: 20px;
 }
 
-.rounded {
-    border-radius: 5px;
+.point-display {
+    width: 100%;
 }
 
 .centered-form {

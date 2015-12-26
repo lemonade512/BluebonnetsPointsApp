@@ -15,7 +15,7 @@
         <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover{% if 'profile' == active_page %} pure-menu-selected{% endif %}">
             <a href="/profile/{{ user_data.user_id }}" class="pure-menu-link">{{ user_data.first_name }}</a>
             <ul class="pure-menu-children">
-                <li class="pure-menu-item"><a href="/" class="pure-menu-link">Dashboard</a></li>
+                <li class="pure-menu-item"><a href="/dashboard" class="pure-menu-link">Dashboard</a></li>
                 <li class="pure-menu-item"><a href="/profile/{{ user_data.user_id }}" class="pure-menu-link">Profile</a></li>
                 <li class="pure-menu-item"><a href="{{ logout_url }}" class="pure-menu-link">Logout</a></li>
             </ul>

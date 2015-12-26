@@ -1,0 +1,77 @@
+@media (max-width: 48em) {
+    .progress-bar {
+        display: none;
+        width: 0px;
+    }
+
+    .progress-bar-container {
+        display: none;
+        width: 0px;
+    }
+}
+
+.progress-bar {
+    width: 100%;
+    height: 30px;
+    border-collapse: separate;
+    /*
+    border: 2px solid black;
+    border-radius: 8px;
+    */
+    table-layout: fixed;
+}
+
+.progress-bar-container {
+    width: 60%;
+    height: 100%;
+}
+
+.progress-bar tr:first-child td:first-child {
+    border-top-left-radius: 10px;
+    border-left: 2px solid black;
+}
+
+.progress-bar tr:first-child td:last-child {
+    border-top-right-radius: 10px;
+    border-right: 2px solid black;
+}
+
+.progress-bar tr:last-child td:first-child {
+    border-bottom-left-radius: 10px;
+}
+
+.progress-bar tr:last-child td:last-child {
+    border-bottom-right-radius: 10px;
+}
+
+.progress-bar td {
+    /*border: 2px solid black;*/
+    border-top: 2px solid black;
+    border-bottom: 2px solid black;
+}
+
+.progress-bar td:not(:first-child) {
+    border-left: 1px solid black;
+    height: 100%;
+}
+
+.filled-progress {
+    background-color: #169d43;
+}
+
+.progress-label {
+    font-size: 20pt;
+    color: #cacaca;
+    white-space: nowrap;
+}
+
+.remaining-points {
+    text-align: center;
+    color: red;
+}
+
+.finished-points {
+    text-align: center;
+    color: green;
+}
+

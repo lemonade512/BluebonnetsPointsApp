@@ -93,6 +93,16 @@ def signup():
     }
     return render_jinja_template("signup.html", template_values)
 
+@app.route('/dashboard')
+# Require user to be logged in
+# TODO make a require_login decorator that redirects differently than require
+# permission.
+@require_permission('user')
+def dashboard():
+    template_values = {
+        'active_page': 'dashboard',
+    }
+    return render_jinja_template("dashboard.html", template_values)
 
 # **************************************************************************** #
 #                              Error Handlers                                  #
