@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% set active_page = "profile" %}
 {% block title %}No Profile{% endblock %}
 {% block javascript %}
 <script>
@@ -9,7 +8,7 @@ remove_exception = function(i) {
         type: 'DELETE',
         success: function() {
             $('#outcome').html('<span style="color: green">Successfully deleted!</span>');
-            get_point_exceptions()
+            get_point_exceptions();
         }
     }).fail(function() {
         // TODO This should be more user friendly
@@ -25,20 +24,19 @@ get_point_exceptions = function() {
     var params_str = $.param(params);
     $.get('/users/{{target_user.user_id}}', function(data) {
         $("#point-exceptions").empty();
-        table = $("<table class='pure-table centered'></table>");
+        table = $("<table class='pure-table'></table>");
         table.append($("<thead></thead>")
                 .append($("<tr></tr>")
                     .append("<th>Type</th><th># Required</th><th>Delete</th>")));
         tbody = $("<tbody></tbody>");
 
         $.each(data.point_exceptions, function(i, exception) {
-            console.log("Adding row");
             tr = $("<tr></tr>");
             tr.append("<td>" + exception.point_type + "</td><td align='center'>" + exception.points_needed + "</td>");
 
             icon = $("<i class='fa fa-trash' />");
             td = $("<td align='center'></td>");
-            btn = $("<button class='pure-button rounded' />").click(function() {
+            btn = $("<button type='button' class='pure-button rounded' />").click(function() {
                 remove_exception(i);
             });
 
@@ -73,7 +71,6 @@ $(function () {
                 $('#outcome').html('<span style="color: green">Successfully saved!</span>');
             }
         }).fail(function(resp) {
-            console.log(resp);
             // TODO This should be more user friendly
             $('#outcome').html('<span style="color: red">There was a problem!</span>');
         });
@@ -100,7 +97,7 @@ $(function () {
 {% endblock %}
 {% block content %}
     <h2> User Profile </h2>
-    <form id="profile-form" method="put" action="/users/{{target_user.user_id}}" class="pure-form pure-form-aligned">
+    <form id="profile-form" method="put" action="/users/{{target_user.user_id}}" class="pure-form pure-form-aligned centered-form">
         <div class="pure-control-group">
             <label for="fname">First Name</label>
             <input class="pure-u-1-2" type="text" id="fname" name="fname" value={{target_user.first_name}} />
@@ -142,9 +139,9 @@ $(function () {
     <p id="outcome"></p>
 
     <h2>Point Reductions</h2>
-    <div id="point-exceptions" style="padding-bottom: 15px;"></div>
 
-    <form id="add-exception" method="post" action="/users/{{target_user.user_id}}/point-exceptions" class="pure-form pure-form-aligned">
+    <form id="add-exception" method="post" action="/users/{{target_user.user_id}}/point-exceptions" class="pure-form pure-form-aligned centered-form">
+        <div id="point-exceptions" style=></div>
         <div class="pure-control-group">
             <label for="type">Point Type</label>
             <input type="text" id="type" name="type" />

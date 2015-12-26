@@ -19,22 +19,24 @@ api = Api(app)
 
 @app.route('/')
 def index():
-    return render_jinja_template("index.html")
+    template_values = {
+        'active_page': 'home',
+    }
+    return render_jinja_template("index.html", template_values)
 
 @app.route('/admin')
 @require_admin
 def admin():
-    return render_jinja_template("admin.html")
+    template_values = {
+        'active_page': 'admin',
+    }
+    return render_jinja_template("admin.html", template_values)
 
 @app.route('/members')
 @require_permission('officer')
 def members():
-    # TODO right now I am getting all of the users on a server and then
-    # rendering the template. It might be better to make an ajax request
-    # to populate the data on the client. This would allow better
-    # client-side error handling if data is missing (a page could still be
-    # shown)
     template_values = {
+        'active_page': 'members',
         'users': UserData.query().order(UserData.first_name)
     }
 
@@ -47,14 +49,22 @@ def profile(user_url_segment):
     target_user = UserData.get_from_url_segment(user_url_segment)
     if target_user is None:
         template_values = {
-            "target_user": user_url_segment,
+            'target_user': user_url_segment,
         }
         return render_jinja_template("noprofile.html", template_values), 404
 
     if target_user.username != user_url_segment:
         return redirect('/profile/{0}'.format(target_user.username))
 
+    # If looking at the current user's profile, hilight the users name in the
+    # nav bar
+    if target_user == UserData.get_current_user_data():
+        active = 'profile'
+    else:
+        active = None
+
     template_values = {
+        'active_page': active,
         'target_user': target_user,
     }
     return render_jinja_template("profile.html", template_values)
@@ -63,6 +73,7 @@ def profile(user_url_segment):
 def login():
     next_url = url_for("postlogin", next=request.args.get("next", "/"))
     template_values = {
+        'active_page': 'login',
         'google_login_url': users.create_login_url(next_url),
     }
     return render_jinja_template("login.html", template_values)

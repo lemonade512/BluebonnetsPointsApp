@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% set active_page = "members" %}
 {% block title %}Members{% endblock %}
 {% block javascript %}
 <script>
@@ -48,8 +47,8 @@ $(document).ready(function() {
 {% endblock %}
 {% block content %}
     <h1> Members </h1>
-    <form class="pure-form center-text">
-        <select class="centered pure-u-1-4" id="filter">
+    <form class="pure-form centered">
+        <select class="pure-u-1-4" id="filter">
             <option value="active" selected="selected">Active</option>
             <option value="inactive">Inactive</option>
             <option value="both">Both</option>
