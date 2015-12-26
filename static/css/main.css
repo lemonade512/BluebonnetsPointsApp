@@ -1,8 +1,20 @@
+html, body {
+    height: 100%;
+}
+
+#wrapper {
+    min-height: 100%;
+    position: relative;
+}
+
 .home-menu {
     padding: 1em;
     padding-right: 2em;
     position: relative;
     background-color: #dddddd;
+
+    /* Avoid the bug discussed here https://bugzilla.mozilla.org/show_bug.cgi?id=488725 */
+    white-space: normal;
 }
 
 @media (min-width: 48em) {
@@ -25,37 +37,42 @@
     text-decoration: underline;
 }
 
+#content {
+    /* Used to pad the footer */
+    padding-bottom: 60px;
+}
+
 #footer {
-    padding: 15px;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 40px;
     text-align: center;
 }
 
 .centered {
     margin-left: auto;
     margin-right: auto;
-}
-
-.right {
-    margin-left: auto;
-}
-
-.center-text {
     text-align: center;
 }
 
-.center-text:after {
-    text-align: left;
+#filter {
+    margin-bottom: 15px;
 }
-.center-text:before {
-    text-align: left;
+
+#point-exceptions table {
+    width: 100%;
+    margin-bottom: 20px;
 }
 
 .rounded {
     border-radius: 5px;
 }
 
-.padded {
-    margin-top: 10px;
+.centered-form {
+    /*display: inline-block;*/
+    text-align: center;
+    width: 100%;
 }
 
 select {
