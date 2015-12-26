@@ -69,6 +69,8 @@ html, body {
 
 .point-display {
     width: 100%;
+    border-spacing: 8px 20px;
+    border-collapse: separate;
 }
 
 .centered-form {
