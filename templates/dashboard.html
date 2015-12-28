@@ -1,10 +1,37 @@
 {% extends "base.html" %}
 {% block title %}Members{% endblock %}
+{% block javascript %}
+<script>
+$(
+    function() {
+        // Function that toggles child levels
+        $(".progress-expander").click(function() {
+            tr = $(this).parent();
+            level = tr.data('level');
+            stopAction = false;
+
+            tr.toggleClass('contracted');
+            tr.toggleClass('expanded');
+
+            tr.nextAll().each(function() {
+                if ($(this).data('level') === level) {
+                    stopAction = true;
+                }
+                if (!stopAction && $(this).data('level') === level + 1) {
+                    $(this).toggleClass('debug-hidden');
+                }
+            });
+        });
+    }
+);
+</script>
+{% endblock %}
 {% block content %}
     <h1> Your Points </h1>
     <table class="point-display">
-        <tr>
-            <td class="progress-label">&gt; Philanthropy</td>
+        <tr data-level="1" class="contracted l1">
+            <td class="progress-expander"></td>
+            <td class="progress-label">Philanthropy</td>
             <td class="progress-bar-container">
                 <table class="progress-bar">
                     <tr>
@@ -19,8 +46,29 @@
             <td class="remaining-points">5 points needed</td>
         </tr>
 
-        <tr>
-            <td class="progress-label">&gt; Meetings</td>
+        <tr data-level="2" class="debug-hidden l2">
+            <td class="progress-expander"></td>
+            <td class="progress-label">Philanthropy</td>
+            <td class="progress-bar-container">
+                <table class="progress-bar">
+                    <tr>
+                        <td class="filled-progress"></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </table>
+            </td>
+            <td class="remaining-points">5 points needed</td>
+        </td>
+
+        <tr data-level="2" class="debug-hidden l2 spacer">
+        </tr>
+
+        <tr data-level="1" class="contracted l1">
+            <td class="progress-expander"></td>
+            <td class="progress-label">Meetings</td>
             <td class="progress-bar-container">
                 <table class="progress-bar">
                     <tr>
@@ -37,8 +85,46 @@
             <td class="remaining-points">3.5 points needed</td>
         </tr>
 
-        <tr>
-            <td class="progress-label">&gt; Sisterhood</td>
+        <tr data-level="2" class="debug-hidden l2">
+            <td class="progress-expander"></td>
+            <td class="progress-label">Level 2</td>
+            <td class="progress-bar-container">
+                <table class="progress-bar">
+                    <tr>
+                        <td class="filled-progress"></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </table>
+            </td>
+            <td class="remaining-points">5 points needed</td>
+        </td>
+
+        <tr data-level="2" class="debug-hidden l2">
+            <td class="progress-expander"></td>
+            <td class="progress-label">Philanthropy</td>
+            <td class="progress-bar-container">
+                <table class="progress-bar">
+                    <tr>
+                        <td class="filled-progress"></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </table>
+            </td>
+            <td class="remaining-points">5 points needed</td>
+        </td>
+
+        <tr data-level="2" class="debug-hidden l2 spacer">
+        </tr>
+
+        <tr data-level="1" class="contracted l1">
+            <td class="progress-expander"></td>
+            <td class="progress-label">Sisterhood</td>
             <td class="progress-bar-container">
                 <table class="progress-bar">
                     <tr>
@@ -67,6 +153,18 @@
                 </table>
             </td>
             <td class="finished-points">0 points needed</td>
+        </tr>
+    </table>
+
+    <h1> Upcoming Events </h1>
+    <table class="events-table">
+        <tr>
+            <td>10/25/15</td>
+            <td>Monthly Meeting</td>
+        </tr>
+        <tr>
+            <td>11/17/15</td>
+            <td>Fall Formal</td>
         </tr>
     </table>
 {% endblock %}

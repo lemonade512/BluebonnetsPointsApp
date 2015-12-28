@@ -73,6 +73,20 @@ html, body {
     border-collapse: separate;
 }
 
+.debug-hidden {
+    display: none;
+}
+
+@media screen and (min-width: 20em) {
+    .events-table {
+        margin: 2em;
+    }
+}
+
+.events-table td {
+    padding: 0.5em 1em;
+}
+
 .centered-form {
     /*display: inline-block;*/
     text-align: center;

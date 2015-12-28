@@ -55,15 +55,44 @@
     height: 100%;
 }
 
+.contracted .progress-expander {
+    width: 10px;
+    height: 20px;
+    background-position: 0px 5px;
+    background-repeat: no-repeat;
+    background-size: 10px 10px;
+    background-image: url("/static/images/right_arrow.png");
+}
+
+.expanded .progress-expander {
+    width: 10px;
+    height: 20px;
+    background-position: 0px 5px;
+    background-repeat: no-repeat;
+    background-size: 10px 10px;
+    background-image: url("/static/images/down_arrow.png");
+}
+
 .filled-progress {
     background-color: #169d43;
 }
 
 .progress-label {
     font-size: 20pt;
-    color: #cacaca;
+    color: #7f7f7f;
     white-space: nowrap;
 }
+
+.l2 .progress-label {
+    color: #000;
+    font-size: 15pt;
+    text-align: right;
+}
+
+.l2 .progress-bar {
+    height: 15px;
+}
+
 
 .remaining-points {
     text-align: center;
