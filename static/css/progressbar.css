@@ -91,6 +91,9 @@
 
 .l2 .progress-bar {
     height: 15px;
+    width: 80%;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 
