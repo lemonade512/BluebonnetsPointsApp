@@ -10,7 +10,7 @@ from google.appengine.ext import deferred
 
 from models import UserData, PointException
 from utils import render_jinja_template
-from permissions import require_permission, require_admin
+from permissions import require_permissions
 from update_schema import run_update_schema
 
 # Create the flask app
@@ -22,10 +22,13 @@ def index():
     template_values = {
         'active_page': 'home',
     }
-    return render_jinja_template("index.html", template_values)
+    if UserData.get_current_user_data():
+        return render_jinja_template("dashboard.html", template_values)
+    else:
+        return render_jinja_template("index.html", template_values)
 
 @app.route('/admin')
-@require_admin
+@require_permissions(['admin'])
 def admin():
     template_values = {
         'active_page': 'admin',
@@ -33,7 +36,7 @@ def admin():
     return render_jinja_template("admin.html", template_values)
 
 @app.route('/members')
-@require_permission('officer')
+@require_permissions(['officer'])
 def members():
     template_values = {
         'active_page': 'members',
@@ -45,6 +48,7 @@ def members():
 # TODO The only people who should be able to view a users profile page are
 # officers and the user himself
 @app.route('/profile/<user_url_segment>')
+@require_permissions(['self', 'officer'], logic='or')
 def profile(user_url_segment):
     target_user = UserData.get_from_url_segment(user_url_segment)
     if target_user is None:
@@ -105,15 +109,9 @@ def signup():
     return render_jinja_template("signup.html", template_values)
 
 @app.route('/dashboard')
-# Require user to be logged in
-# TODO make a require_login decorator that redirects differently than require
-# permission.
-@require_permission('user')
+@require_permissions(['user'])
 def dashboard():
-    template_values = {
-        'active_page': 'dashboard',
-    }
-    return render_jinja_template("dashboard.html", template_values)
+    return redirect(url_for("index"))
 
 # **************************************************************************** #
 #                              Error Handlers                                  #
@@ -137,8 +135,12 @@ def application_error(e):
 #                               API                                           #
 # *************************************************************************** #
 
+# TODO I need to return the proper error response when a request does not
+# contain the proper data. See http://stackoverflow.com/questions/3050518/what-http-status-response-code-should-i-use-if-the-request-is-missing-a-required
+
 class UserListAPI(Resource):
 
+    @require_permissions(['officer'], output_format='json')
     def get(self):
         user_filter = request.args.get("filter", "both")
         if user_filter not in ["active", "inactive", "both"]:
@@ -168,6 +170,16 @@ class UserListAPI(Resource):
         return jsonify(**data)
 
     def post(self):
+        """ Adds a new user
+
+        This does not need any extra security because it only changes the
+        information for the currently logged in google user. If there is no
+        google user logged in an error is thrown.
+        """
+        # TODO this method throws generic exceptions that really can't be
+        # properly handled by the client in a user-friendly way. I should
+        # really return error codes here so the client knows what went wrong
+        # other than a generic server error
         data = request.form
         user = users.get_current_user()
         if not user:
@@ -181,13 +193,17 @@ class UserListAPI(Resource):
         user_data = UserData(id=user.user_id())
         user_data.user = user
         user_data.user_id = user.user_id()
+        if data['fname'] == "":
+            raise Exception("The first name was empty")
         user_data.first_name = data['fname']
+        if data['lname'] == "":
+            raise Exception("The first name was empty")
         user_data.last_name = data['lname']
+        user_data.graduation_year = int(data['grad_year'])
+        user_data.graduation_semester = data['grad_semester']
+        user_data.classification = data['classification']
         user_data.active = True
-        # TODO when we create a way to change permissions then this should not be
-        # the default permission set
-        user_data.user_permissions = ['user', 'officer']
-        #user_data.user_permissions = ['user']
+        user_data.user_permissions = ['user']
         user_data.put()
 
         response = jsonify()
@@ -199,9 +215,14 @@ class UserListAPI(Resource):
 # TODO possibly allow for using username in place of user_id
 class UserAPI(Resource):
 
+    @require_permissions(['self', 'officer'], output_format='json', logic='or')
     def get(self, user_id):
         user = UserData.get_user_from_id(user_id)
         data = {
+            "active": user.active,
+            "classification": user.classification,
+            "grad_year": user.graduation_year,
+            "grad_semester": user.graduation_semester,
             "fname": user.first_name,
             "lname": user.last_name,
             "profile": "/profile/" + user.user_id,
@@ -213,8 +234,15 @@ class UserAPI(Resource):
 
         return jsonify(**data)
 
+    @require_permissions(['self', 'officer'], output_format='json', logic='or')
     def put(self, user_id):
-        # TODO check that the current user is either the target user or an officer
+        """ Updates the user profile information
+
+        This method can only be called by the user being updated or an officer.
+        We do not need to protect against the user changing their point
+        exceptions in this method because the method does not update the point
+        exceptions.
+        """
         user = UserData.get_user_from_id(user_id)
         if not user:
             raise Exception("I don't know that person")
@@ -222,7 +250,7 @@ class UserAPI(Resource):
         data = request.form
         user.first_name = data['fname']
         user.last_name = data['lname']
-        if data['is_active'] == "true":
+        if data['active'] == "true":
             user.active = True
         else:
             user.active = False
@@ -231,20 +259,26 @@ class UserAPI(Resource):
         user.graduation_year = data.get('grad_year', type=int)
         user.put()
 
+        # TODO A put request (and really any other request that creates or
+        # updates an object) should return the new representation of that
+        # object so clients don't need to make more API calls
+
         response = jsonify()
-        response.status_code = 201
+        response.status_code = 204
+        # TODO I believe only POST requests need to return this header
         response.headers['location'] = '/users/' + str(user.user_id)
         return response
 
 
 class ExceptionAPI(Resource):
 
+    @require_permissions(['self', 'officer'], output_format='json', logic='or')
     def get(self, user_id, index):
         user = UserData.get_user_from_id(user_id)
         if not user:
             raise Exception("I don't know that person")
 
-        if index > len(user.point_exceptions):
+        if index > len(user.point_exceptions)-1:
             response = jsonify(message="Resource does not exist")
             response.status_code = 404
             return response
@@ -258,19 +292,24 @@ class ExceptionAPI(Resource):
         return jsonify(**data)
 
     # TODO delete needs to be idempotent
+    @require_permissions(['other', 'officer'], output_format='json')
     def delete(self, user_id, index):
         user = UserData.get_user_from_id(user_id)
         if not user:
             raise Exception("I don't know that person")
 
+        if index > len(user.point_exceptions)-1:
+            response = jsonify(message="Resource does not exist")
+            response.status_code = 404
+            return response
+
         del user.point_exceptions[index]
         user.put()
-
-        return ('', '204')
 
 
 class ExceptionListAPI(Resource):
 
+    @require_permissions(['self', 'officer'], output_format='json', logic='or')
     def get(self, user_id):
         user = UserData.get_user_from_id(user_id)
         data = {
@@ -282,14 +321,15 @@ class ExceptionListAPI(Resource):
 
         return jsonify(**data)
 
+    @require_permissions(['other', 'officer'], output_format='json')
     def post(self, user_id):
-        data = request.form
-        user = UserData.get_user_from_id(data['target_user_id'])
+        user = UserData.get_user_from_id(user_id)
         if not user:
             raise Exception("I don't know that person")
 
         #TODO The flow of this code looks more complicated and confusing than it
         # needs to be. Try to clean it up
+        data = request.form
         p = None
         for exc in user.point_exceptions:
             if exc.point_type == data['point_type']:
@@ -305,7 +345,9 @@ class ExceptionListAPI(Resource):
 
         response = jsonify()
         response.status_code = 201
-        response.headers['location'] = "/users/" + user.user_id + "/point-exceptions/" + str(len(user.point_exceptions) - 1)
+        response.headers['location'] = "/users/" + user.user_id + \
+                                       "/point-exceptions/" + \
+                                       str(user.point_exceptions.index(p))
         return response
 
 

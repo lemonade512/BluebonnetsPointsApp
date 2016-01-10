@@ -10,9 +10,16 @@ remove_exception = function(i) {
             $('#outcome').html('<span style="color: green">Successfully deleted!</span>');
             get_point_exceptions();
         }
-    }).fail(function() {
+    }).fail(function(data) {
+        if (data.status === 403) {
+            $('#outcome').html('<span style="color: red">' +
+                    data.responseJSON['message'] +
+                    '</span>');
+        }
+        else {
+            $('#outcome').html('<span style="color: red">There was a problem!</span>');
+        }
         // TODO This should be more user friendly
-        $('#outcome').html('<span style="color: red">There was a problem!</span>');
     });
 }
 
@@ -60,7 +67,7 @@ $(function () {
             classification: $("#classification")[0].value,
             grad_semester: $("#grad-semester")[0].value,
             grad_year: $("#grad-year")[0].value,
-            is_active: $("#active").is(":checked"),
+            active: $("#active").is(":checked"),
         }
 
         $.ajax({
