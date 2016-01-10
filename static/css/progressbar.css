@@ -56,20 +56,20 @@
 }
 
 .contracted .progress-expander {
-    width: 10px;
+    width: 15px;
     height: 20px;
     background-position: 0px 5px;
     background-repeat: no-repeat;
-    background-size: 10px 10px;
+    background-size: 15px 20px;
     background-image: url("/static/images/right_arrow.png");
 }
 
 .expanded .progress-expander {
-    width: 10px;
+    width: 15px;
     height: 20px;
     background-position: 0px 5px;
     background-repeat: no-repeat;
-    background-size: 10px 10px;
+    background-size: 15px 20px;
     background-image: url("/static/images/down_arrow.png");
 }
 
