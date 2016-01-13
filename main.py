@@ -221,7 +221,7 @@ class UserListAPI(Resource):
 
         response = jsonify()
         response.status_code = 201
-        response.headers['location'] = '/users/' + str(user_data.user_id)
+        response.headers['location'] = '/api/users/' + str(user_data.user_id)
         return response
 
 
@@ -280,7 +280,7 @@ class UserAPI(Resource):
         response = jsonify()
         response.status_code = 204
         # TODO I believe only POST requests need to return this header
-        response.headers['location'] = '/users/' + str(user.user_id)
+        response.headers['location'] = '/api/users/' + str(user.user_id)
         return response
 
 
@@ -359,7 +359,7 @@ class ExceptionListAPI(Resource):
 
         response = jsonify()
         response.status_code = 201
-        response.headers['location'] = "/users/" + user.user_id + \
+        response.headers['location'] = "/api/users/" + user.user_id + \
                                        "/point-exceptions/" + \
                                        str(user.point_exceptions.index(p))
         return response
@@ -390,7 +390,7 @@ class PermissionListAPI(Resource):
 
         response = jsonify()
         response.status_code = 201
-        response.headers['location'] = "/users/" + user.user_id + \
+        response.headers['location'] = "/api/users/" + user.user_id + \
                                        "/permissions/" + perm
         return response
 
@@ -409,12 +409,13 @@ class PermissionAPI(Resource):
         user.put()
 
 
-api.add_resource(UserListAPI, '/users', endpoint='users')
-api.add_resource(UserAPI, '/users/<string:user_id>', endpoint='user')
-api.add_resource(ExceptionListAPI, '/users/<string:user_id>/point-exceptions')
-api.add_resource(ExceptionAPI, '/users/<string:user_id>/point-exceptions/<int:index>')
-api.add_resource(PermissionListAPI, '/users/<string:user_id>/permissions')
-api.add_resource(PermissionAPI, '/users/<string:user_id>/permissions/<string:perm>')
+api.add_resource(UserListAPI, '/api/users', endpoint='users')
+api.add_resource(UserAPI, '/api/users/<string:user_id>', endpoint='user')
+api.add_resource(ExceptionListAPI, '/api/users/<string:user_id>/point-exceptions')
+api.add_resource(ExceptionAPI, '/api/users/<string:user_id>/point-exceptions/<int:index>')
+api.add_resource(PermissionListAPI, '/api/users/<string:user_id>/permissions')
+api.add_resource(PermissionAPI, '/api/users/<string:user_id>/permissions/<string:perm>')
+api.add_resource(PointTypeListAPI, '/api/point-types')
 
 
 # *************************************************************************** #

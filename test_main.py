@@ -145,7 +145,7 @@ class MainTestCase(unittest.TestCase):
 # The dictionary is keeyed by the endpoint and for each endpoint there
 # is a list of methods to run and a list of data to use for each method.
 # Then there is an expected response code? (Just an idea to follow DRY)
-#endpoints = {'/users/101': [('101', '201'), ]}
+#endpoints = {'/api/users/101': [('101', '201'), ]}
 
 
 class UsersAPITestCase(unittest.TestCase):
@@ -211,7 +211,7 @@ class UsersAPITestCase(unittest.TestCase):
     def test_get_user_list_as_officer(self):
         self.maxDiff = None
         self.loginUser(user_id="200")
-        response = self.app.get('/users')
+        response = self.app.get('/api/users')
         self.assertEqual(200, response.status_code)
         expected = {
             u"users": [
@@ -255,14 +255,14 @@ class UsersAPITestCase(unittest.TestCase):
             self.assertIn(u, expected['users'])
 
     def test_get_user_list_forbidden_not_logged_in(self):
-        response = self.app.get('/users')
+        response = self.app.get('/api/users')
         self.assertEqual(403, response.status_code)
         data = json.loads(response.data)
         self.assertEqual("Not logged in", data['message'])
 
     def test_get_user_list_forbidden_not_officer(self):
         self.loginUser(user_id="100")
-        response = self.app.get('/users')
+        response = self.app.get('/api/users')
         self.assertEqual(403, response.status_code)
         data = json.loads(response.data)
         self.assertEqual("Don't have permission", data['message'])
@@ -277,7 +277,7 @@ class UsersAPITestCase(unittest.TestCase):
             u'grad_year': 2016,
             u'grad_semester': u"spring",
         }
-        response = self.app.post("/users", data=post_data)
+        response = self.app.post("/api/users", data=post_data)
         self.assertEqual(201, response.status_code)
 
         # Get the returned location and check that it is the same
@@ -300,7 +300,7 @@ class UsersAPITestCase(unittest.TestCase):
             "grad_year": 2016,
             "grad_semester": "spring",
         }
-        response = self.app.post("/users", data=post_data)
+        response = self.app.post("/api/users", data=post_data)
         self.assertEqual(500, response.status_code)
 
     def test_post_user_list_empty_first_name(self):
@@ -313,7 +313,7 @@ class UsersAPITestCase(unittest.TestCase):
             "grad_year": 2016,
             "grad_semester": "spring",
         }
-        response = self.app.post("/users", data=post_data)
+        response = self.app.post("/api/users", data=post_data)
         self.assertEqual(500, response.status_code)
 
     def test_post_user_list_empty_last_name(self):
@@ -326,7 +326,7 @@ class UsersAPITestCase(unittest.TestCase):
             "grad_year": 2016,
             "grad_semester": "spring",
         }
-        response = self.app.post("/users", data=post_data)
+        response = self.app.post("/api/users", data=post_data)
         self.assertEqual(500, response.status_code)
 
     def test_post_user_list_string_year(self):
@@ -339,7 +339,7 @@ class UsersAPITestCase(unittest.TestCase):
             "grad_year": "2016",
             "grad_semester": "spring",
         }
-        response = self.app.post("/users", data=post_data)
+        response = self.app.post("/api/users", data=post_data)
         self.assertEqual(500, response.status_code)
 
     def test_post_user_list_bad_semester(self):
@@ -352,7 +352,7 @@ class UsersAPITestCase(unittest.TestCase):
             "grad_year": 2016,
             "grad_semester": "not_a_semester",
         }
-        response = self.app.post("/users", data=post_data)
+        response = self.app.post("/api/users", data=post_data)
         self.assertEqual(500, response.status_code)
 
     def test_post_user_list_not_logged_in(self):
@@ -364,12 +364,12 @@ class UsersAPITestCase(unittest.TestCase):
             "grad_year": 2016,
             "grad_semester": "spring",
         }
-        response = self.app.post("/users", data=post_data)
+        response = self.app.post("/api/users", data=post_data)
         self.assertEqual(500, response.status_code)
 
     def test_get_own_user(self):
         self.loginUser(user_id="100")
-        response = self.app.get('/users/100')
+        response = self.app.get('/api/users/100')
         self.assertEqual(200, response.status_code)
         data = json.loads(response.data)
         expected = {
@@ -387,14 +387,14 @@ class UsersAPITestCase(unittest.TestCase):
 
     def test_get_other_user_fails(self):
         self.loginUser(user_id="100")
-        response = self.app.get('/users/200')
+        response = self.app.get('/api/users/200')
         self.assertEqual(403, response.status_code)
         data = json.loads(response.data)
         self.assertEqual("Don't have permission", data['message'])
 
     def test_get_other_user_as_officer(self):
         self.loginUser(user_id="200")
-        response = self.app.get('/users/100')
+        response = self.app.get('/api/users/100')
         self.assertEqual(200, response.status_code)
         data = json.loads(response.data)
         expected = {
@@ -420,7 +420,7 @@ class UsersAPITestCase(unittest.TestCase):
             'grad_year': 2016,
             'grad_semester': "spring",
         }
-        response = self.app.put("/users/100", data=put_data)
+        response = self.app.put("/api/users/100", data=put_data)
         self.assertEqual(204, response.status_code)
 
         # Get the returned location and check that it is the same
@@ -443,7 +443,7 @@ class UsersAPITestCase(unittest.TestCase):
             u'grad_year': 2016,
             u'grad_semester': u"spring",
         }
-        response = self.app.put("/users/100", data=put_data)
+        response = self.app.put("/api/users/100", data=put_data)
         self.assertEqual(204, response.status_code)
 
         # Get the returned location and check that it is the same
@@ -466,7 +466,7 @@ class UsersAPITestCase(unittest.TestCase):
             'grad_year': 2016,
             'grad_semester': "spring",
         }
-        response = self.app.put("/users/100", data=put_data)
+        response = self.app.put("/api/users/100", data=put_data)
         self.assertEqual(403, response.status_code)
 
     def test_put_user_not_logged_in(self):
@@ -478,7 +478,7 @@ class UsersAPITestCase(unittest.TestCase):
             "grad_year": 2016,
             "grad_semester": "spring",
         }
-        response = self.app.put("/users/100", data=put_data)
+        response = self.app.put("/api/users/100", data=put_data)
         self.assertEqual(403, response.status_code)
 
 
@@ -544,7 +544,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
     def test_get_current_user_point_exception(self):
         self.loginUser(user_id="100")
-        response = self.app.get('/users/100/point-exceptions/0')
+        response = self.app.get('/api/users/100/point-exceptions/0')
         self.assertEqual(response.status_code, 200)
 
         data = json.loads(response.data)
@@ -556,7 +556,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
     def test_get_other_user_point_exception_without_officer(self):
         self.loginUser(user_id="100")
-        response = self.app.get('/users/200/point-exceptions/0')
+        response = self.app.get('/api/users/200/point-exceptions/0')
         self.assertEqual(response.status_code, 403)
 
         data = json.loads(response.data)
@@ -564,7 +564,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
     def test_get_other_user_point_exception_as_officer(self):
         self.loginUser(user_id="200")
-        response = self.app.get('/users/100/point-exceptions/0')
+        response = self.app.get('/api/users/100/point-exceptions/0')
         self.assertEqual(response.status_code, 200)
 
         data = json.loads(response.data)
@@ -576,7 +576,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
     def test_get_user_point_exception_index_error(self):
         self.loginUser(user_id="200")
-        response = self.app.get('/users/100/point-exceptions/1')
+        response = self.app.get('/api/users/100/point-exceptions/1')
         self.assertEqual(response.status_code, 404)
 
         data = json.loads(response.data)
@@ -584,7 +584,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
     def test_delete_own_point_exception(self):
         self.loginUser(user_id="100")
-        response = self.app.delete('/users/100/point-exceptions/0')
+        response = self.app.delete('/api/users/100/point-exceptions/0')
         self.assertEqual(response.status_code, 403)
 
         data = json.loads(response.data)
@@ -592,7 +592,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
         # Officers shouldn't be able to delete their own excpeptions
         self.loginUser(user_id="200")
-        response = self.app.delete('/users/200/point-exceptions/0')
+        response = self.app.delete('/api/users/200/point-exceptions/0')
         self.assertEqual(response.status_code, 403)
 
         data = json.loads(response.data)
@@ -600,7 +600,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
     def test_delete_other_user_point_exception_without_officer(self):
         self.loginUser(user_id="100")
-        response = self.app.delete('/users/200/point-exceptions/0')
+        response = self.app.delete('/api/users/200/point-exceptions/0')
         self.assertEqual(response.status_code, 403)
 
         data = json.loads(response.data)
@@ -608,21 +608,21 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
     def test_delete_other_user_point_exception_as_officer(self):
         self.loginUser(user_id="200")
-        response = self.app.delete('/users/100/point-exceptions/0')
+        response = self.app.delete('/api/users/100/point-exceptions/0')
         self.assertEqual(response.status_code, 200)
 
-        response = self.app.get('/users/100')
+        response = self.app.get('/api/users/100')
         data = json.loads(response.data)
         self.assertEqual(data['point_exceptions'], [])
 
     def test_delete_non_existent_point_exception(self):
         self.loginUser(user_id="200")
-        response = self.app.delete('/users/100/point-exceptions/1')
+        response = self.app.delete('/api/users/100/point-exceptions/1')
         self.assertEqual(response.status_code, 404)
 
     def test_get_own_point_exceptions(self):
         self.loginUser(user_id="100")
-        response = self.app.get('/users/100/point-exceptions')
+        response = self.app.get('/api/users/100/point-exceptions')
         self.assertEqual(response.status_code, 200)
 
         data = json.loads(response.data)
@@ -638,7 +638,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
     def test_get_other_user_point_exceptions_as_officer(self):
         self.loginUser(user_id="200")
-        response = self.app.get('/users/100/point-exceptions')
+        response = self.app.get('/api/users/100/point-exceptions')
         self.assertEqual(response.status_code, 200)
 
         data = json.loads(response.data)
@@ -654,7 +654,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
     def test_get_other_user_point_exceptions_without_officer(self):
         self.loginUser(user_id="100")
-        response = self.app.get('/users/200/point-exceptions')
+        response = self.app.get('/api/users/200/point-exceptions')
         self.assertEqual(response.status_code, 403)
 
         data = json.loads(response.data)
@@ -666,7 +666,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
             u'point_type': u"philanthropy",
             u'points_needed': 10,
         }
-        response = self.app.post("/users/100/point-exceptions", data=post_data)
+        response = self.app.post("/api/users/100/point-exceptions", data=post_data)
         self.assertEqual(response.status_code, 403)
 
         data = json.loads(response.data)
@@ -674,7 +674,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
         # Officer's can't change their own point exceptions
         self.loginUser(user_id="200")
-        response = self.app.post("/users/200/point-exceptions", data=post_data)
+        response = self.app.post("/api/users/200/point-exceptions", data=post_data)
         self.assertEqual(response.status_code, 403)
 
         data = json.loads(response.data)
@@ -686,7 +686,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
             u'point_type': u"philanthropy",
             u'points_needed': 10,
         }
-        response = self.app.post("/users/200/point-exceptions", data=post_data)
+        response = self.app.post("/api/users/200/point-exceptions", data=post_data)
         self.assertEqual(response.status_code, 403)
 
         data = json.loads(response.data)
@@ -698,7 +698,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
             u'point_type': u"philanthropy",
             u'points_needed': 10,
         }
-        response = self.app.post("/users/100/point-exceptions", data=post_data)
+        response = self.app.post("/api/users/100/point-exceptions", data=post_data)
         self.assertEqual(response.status_code, 201)
 
         response = self.app.get(response.headers['location'])
@@ -711,14 +711,14 @@ class PointExceptionsAPITestCase(unittest.TestCase):
             u'point_type': u"philanthropy",
             u'points_needed': 10,
         }
-        response = self.app.post("/users/100/point-exceptions", data=post_data)
+        response = self.app.post("/api/users/100/point-exceptions", data=post_data)
         post_data['point_type'] = u"meetings"
-        response = self.app.post("/users/100/point-exceptions", data=post_data)
+        response = self.app.post("/api/users/100/point-exceptions", data=post_data)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.headers['location'],
-                         "http://localhost/users/100/point-exceptions/0")
+                         "http://localhost/api/users/100/point-exceptions/0")
 
-        response = self.app.get("/users/100/point-exceptions/0")
+        response = self.app.get("/api/users/100/point-exceptions/0")
         response_data = json.loads(response.data)
         self.assertEqual(post_data, response_data)
 
@@ -785,7 +785,7 @@ class PermissionsAPITestCase(unittest.TestCase):
 
     def test_get_permissions_as_officer(self):
         self.loginUser(user_id="200")
-        response = self.app.get('/users/100/permissions')
+        response = self.app.get('/api/users/100/permissions')
         self.assertEqual(response.status_code, 200)
 
         data = json.loads(response.data)
@@ -794,7 +794,7 @@ class PermissionsAPITestCase(unittest.TestCase):
         }
         self.assertEqual(expected, data)
 
-        response = self.app.get('/users/200/permissions')
+        response = self.app.get('/api/users/200/permissions')
         self.assertEqual(response.status_code, 200)
 
         data = json.loads(response.data)
@@ -805,7 +805,7 @@ class PermissionsAPITestCase(unittest.TestCase):
 
     def test_get_permissions_as_user(self):
         self.loginUser(user_id="100")
-        response = self.app.get('/users/100/permissions')
+        response = self.app.get('/api/users/100/permissions')
         self.assertEqual(response.status_code, 403)
 
         data = json.loads(response.data)
@@ -816,13 +816,13 @@ class PermissionsAPITestCase(unittest.TestCase):
         post_data = {
             u'permission': u"newperm",
         }
-        response = self.app.post("/users/100/permissions", data=post_data)
+        response = self.app.post("/api/users/100/permissions", data=post_data)
         self.assertEqual(response.status_code, 201)
 
         self.assertEqual(response.headers['location'],
-                         "http://localhost/users/100/permissions/newperm")
+                         "http://localhost/api/users/100/permissions/newperm")
 
-        response = self.app.get("/users/100/permissions")
+        response = self.app.get("/api/users/100/permissions")
         response_data = json.loads(response.data)
         expected = {
             u'permissions': [u"user", u"newperm"]
@@ -834,7 +834,7 @@ class PermissionsAPITestCase(unittest.TestCase):
         post_data = {
             u'permission': u"newperm",
         }
-        response = self.app.post("/users/100/permissions", data=post_data)
+        response = self.app.post("/api/users/100/permissions", data=post_data)
         self.assertEqual(response.status_code, 403)
 
         data = json.loads(response.data)
@@ -845,13 +845,13 @@ class PermissionsAPITestCase(unittest.TestCase):
         post_data = {
             u'permission': u"user",
         }
-        response = self.app.post("/users/100/permissions", data=post_data)
+        response = self.app.post("/api/users/100/permissions", data=post_data)
         self.assertEqual(response.status_code, 201)
 
         self.assertEqual(response.headers['location'],
-                         "http://localhost/users/100/permissions/user")
+                         "http://localhost/api/users/100/permissions/user")
 
-        response = self.app.get("/users/100/permissions")
+        response = self.app.get("/api/users/100/permissions")
         response_data = json.loads(response.data)
         expected = {
             u'permissions': [u"user"]
@@ -860,10 +860,10 @@ class PermissionsAPITestCase(unittest.TestCase):
 
     def test_delete_permission(self):
         self.loginUser(user_id="200")
-        response = self.app.delete("/users/100/permissions/user")
+        response = self.app.delete("/api/users/100/permissions/user")
         self.assertEqual(response.status_code, 200)
 
-        response = self.app.get("/users/100/permissions")
+        response = self.app.get("/api/users/100/permissions")
         response_data = json.loads(response.data)
         expected = {
             u'permissions': [],
@@ -872,10 +872,10 @@ class PermissionsAPITestCase(unittest.TestCase):
 
     def test_delete_non_existent_permission(self):
         self.loginUser(user_id="200")
-        response = self.app.delete("/users/100/permissions/nonexistent_perm")
+        response = self.app.delete("/api/users/100/permissions/nonexistent_perm")
         self.assertEqual(response.status_code, 404)
 
-        response = self.app.get("/users/100/permissions")
+        response = self.app.get("/api/users/100/permissions")
         response_data = json.loads(response.data)
         expected = {
             u'permissions': [u"user"],

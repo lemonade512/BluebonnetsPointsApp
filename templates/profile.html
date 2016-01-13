@@ -4,7 +4,7 @@
 <script>
 remove_exception = function(i) {
     $.ajax({
-        url: '/users/{{target_user.user_id}}/point-exceptions/' + i,
+        url: '/api/users/{{target_user.user_id}}/point-exceptions/' + i,
         type: 'DELETE',
         success: function() {
             $('#outcome').html('<span style="color: green">Successfully deleted!</span>');
@@ -29,7 +29,7 @@ get_point_exceptions = function() {
     };
 
     var params_str = $.param(params);
-    $.get('/users/{{target_user.user_id}}', function(data) {
+    $.get('/api/users/{{target_user.user_id}}', function(data) {
         $("#point-exceptions").empty();
         table = $("<table class='pure-table'></table>");
         table.append($("<thead></thead>")
@@ -104,7 +104,7 @@ $(function () {
 {% endblock %}
 {% block content %}
     <h2> User Profile </h2>
-    <form id="profile-form" method="put" action="/users/{{target_user.user_id}}" class="pure-form pure-form-aligned centered-form">
+    <form id="profile-form" method="put" action="/api/users/{{target_user.user_id}}" class="pure-form pure-form-aligned centered-form">
         <div class="pure-control-group">
             <label for="fname">First Name</label>
             <input class="pure-u-1-2" type="text" id="fname" name="fname" value={{target_user.first_name}} />
@@ -147,7 +147,7 @@ $(function () {
 
     <h2>Point Reductions</h2>
 
-    <form id="add-exception" method="post" action="/users/{{target_user.user_id}}/point-exceptions" class="pure-form pure-form-aligned centered-form">
+    <form id="add-exception" method="post" action="/api/users/{{target_user.user_id}}/point-exceptions" class="pure-form pure-form-aligned centered-form">
         <div id="point-exceptions" style=></div>
         <div class="pure-control-group">
             <label for="type">Point Type</label>

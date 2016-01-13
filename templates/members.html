@@ -13,7 +13,7 @@ var get_users = function(filter) {
         filter: filter
     };
     var params_str = $.param(params);
-    $.get("/users?" + params_str, function(data) {
+    $.get("/api/users?" + params_str, function(data) {
         $("#users").empty();
         $("#users").append(
             '<thead>' +
