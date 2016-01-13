@@ -40,10 +40,20 @@ def admin():
 def members():
     template_values = {
         'active_page': 'members',
-        'users': UserData.query().order(UserData.first_name)
+        'users': UserData.query().order(UserData.first_name),
     }
 
     return render_jinja_template("members.html", template_values)
+
+@app.route('/permissions')
+@require_permissions(['officer'])
+def permissions():
+    template_values = {
+        'active_page': "permissions",
+        'users': UserData.query().order(UserData.first_name),
+    }
+
+    return render_jinja_template("permissions.html", template_values)
 
 # TODO The only people who should be able to view a users profile page are
 # officers and the user himself
@@ -157,6 +167,8 @@ class UserListAPI(Resource):
 
         data = {"users":[]}
         for u in q:
+            # TODO code to create a user json object is duplicated in multiple
+            # places. I should keep it in one spot (maybe UserData)
             data['users'].append({
                 "fname": u.first_name,
                 "lname": u.last_name,
@@ -164,7 +176,8 @@ class UserListAPI(Resource):
                 "grad_year": u.graduation_year,
                 "grad_semester": u.graduation_semester,
                 "classification": u.classification,
-                "profile": "/profile/" + u.user_id,
+                "permissions": u.user_permissions,
+                "user_id": u.user_id,
             })
 
         return jsonify(**data)
@@ -225,7 +238,8 @@ class UserAPI(Resource):
             "grad_semester": user.graduation_semester,
             "fname": user.first_name,
             "lname": user.last_name,
-            "profile": "/profile/" + user.user_id,
+            "permissions": user.user_permissions,
+            "user_id": user.user_id,
             "point_exceptions": [{
                 "point_type": exc.point_type,
                 "points_needed": exc.points_needed,
@@ -351,10 +365,56 @@ class ExceptionListAPI(Resource):
         return response
 
 
+class PermissionListAPI(Resource):
+
+    @require_permissions(['officer'], output_format='json')
+    def get(self, user_id):
+        user = UserData.get_user_from_id(user_id)
+        data = {
+            u'permissions': user.user_permissions,
+        }
+
+        return jsonify(**data)
+
+    @require_permissions(['officer'], output_format='json')
+    def post(self, user_id):
+        user = UserData.get_user_from_id(user_id)
+        data = request.form
+        perm = data['permission']
+        if perm not in user.user_permissions:
+            # TODO an officer could theoretically give themselves 'admin'
+            # privileges using this function. They wouldn't get actual google
+            # admin privileges but it would fool my permissions system
+            user.user_permissions.append(perm)
+        user.put()
+
+        response = jsonify()
+        response.status_code = 201
+        response.headers['location'] = "/users/" + user.user_id + \
+                                       "/permissions/" + perm
+        return response
+
+
+class PermissionAPI(Resource):
+
+    @require_permissions(['other', 'officer'], output_format='json')
+    def delete(self, user_id, perm):
+        user = UserData.get_user_from_id(user_id)
+        if perm not in user.user_permissions:
+            response = jsonify(message="Resource does not exist")
+            response.status_code = 404
+            return response
+
+        user.user_permissions.remove(perm)
+        user.put()
+
+
 api.add_resource(UserListAPI, '/users', endpoint='users')
 api.add_resource(UserAPI, '/users/<string:user_id>', endpoint='user')
 api.add_resource(ExceptionListAPI, '/users/<string:user_id>/point-exceptions')
 api.add_resource(ExceptionAPI, '/users/<string:user_id>/point-exceptions/<int:index>')
+api.add_resource(PermissionListAPI, '/users/<string:user_id>/permissions')
+api.add_resource(PermissionAPI, '/users/<string:user_id>/permissions/<string:perm>')
 
 
 # *************************************************************************** #

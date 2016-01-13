@@ -24,7 +24,7 @@ var get_users = function(filter) {
             $("#users").append(
                 '<tr>' +
                 '<td>' + (i+1) + '</td>' +
-                '<td><a href="' + user.profile + '">' + user.fname + ' ' + user.lname + '</a>' + '</td>' +
+                '<td><a href="/profile/' + user.user_id + '">' + user.fname + ' ' + user.lname + '</a>' + '</td>' +
                 '<td align="center">' + status_map[user.active] + '</td>' +
                 '<td align="center">' + caps(user.classification) + '</td>' +
                 '<td align="center">' + caps(user.grad_semester) + ' ' + user.grad_year + '</td>' +

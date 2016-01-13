@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Permissions{% endblock %}
+{% block javascript %}
+<script>
+var caps = function(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+var delete_perm = function(user_id, perm, checkbox) {
+    $.ajax({
+        url: '/users/' + user_id + '/permissions/' + perm,
+        type: 'DELETE',
+    }).fail(function(data) {
+        $(checkbox).prop("checked", true);
+        if (data.status === 403) {
+            alert(data.responseJSON['message']);
+        }
+        else {
+            alert("There was a problem");
+        }
+    });
+}
+
+var add_perm = function(user_id, perm) {
+    $.post("/users/" + user_id + "/permissions", {
+        permission: perm,
+    }).fail(function(data) {
+        $(checkbox).prop("checked", true);
+        alert("Failed");
+    });
+}
+
+var get_users = function(filter) {
+    var params = {
+        filter: filter
+    };
+    var params_str = $.param(params);
+    $.get("/users?" + params_str, function(data) {
+        $("#users").empty();
+        $("#users").append(
+            '<thead>' +
+            '<th>#</th><th>Name</th><th>Officer</th>' +
+            '</thead>'
+        )
+        $.each(data.users, function(i, user) {
+            tr = $('<tr></tr>');
+            index = $('<td>' + (i+1) + '</td>');
+            tr.append(index);
+            td = $("<td></td>");
+            profile_link = $('<a href="/profile/' + user.user_id + '">' + user.fname + ' '  + user.lname + '</a>');
+            td.append(profile_link);
+            tr.append(td);
+
+            td = $('<td></td>')
+            checkbox = $('<input type="checkbox"></input>');
+            if ($.inArray("officer", user.permissions) > -1) {
+                checkbox = $('<input type="checkbox" checked></input>')
+            }
+            $(checkbox).change(function() {
+                if ($(this).is(":checked")) {
+                    add_perm(user.user_id, "officer", this);
+                } else {
+                    delete_perm(user.user_id, "officer", this);
+                }
+            });
+            td.append(checkbox);
+            tr.append(td);
+
+            $("#users").append(tr);
+        });
+    });
+};
+
+$(document).ready(function() {
+    var default_selection = document.querySelector("#filter option[selected]").value;
+    get_users(default_selection);
+
+    $('#filter').change(function(e) {
+        get_users(this.value);
+    });
+});
+
+</script>
+{% endblock %}
+{% block content %}
+    <h1> Permissions </h1>
+    <form class="pure-form centered">
+        <select class="pure-u-1-4" id="filter">
+            <option value="active" selected="selected">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="both">Both</option>
+        </select>
+    </form>
+
+    <table id="users" class="pure-table centered padded">
+    </table>
+{% endblock %}
+
