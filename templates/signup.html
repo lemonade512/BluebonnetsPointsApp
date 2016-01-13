@@ -7,6 +7,9 @@ $(function () {
         $.post($(this).attr('action'), {
             fname: $('input[name=fname]').val(),
             lname: $('input[name=lname]').val(),
+            classification: $("#classification")[0].value,
+            grad_semester: $("#grad-semester")[0].value,
+            grad_year: $("#grad-year")[0].value,
         }, function (data) {
             document.location.href = '{{ next }}'
         }).fail(function() {
@@ -23,16 +26,35 @@ $(function () {
 <form id="profile-form" method="post" action="/users" class="pure-form pure-form-aligned">
     <div class="pure-control-group">
         <label for="fname">First Name</label>
-        <input type="text" id="fname" name="fname" placeholder="Jane" />
+        <input class="pure-u-1-2" type="text" id="fname" name="fname" placeholder="Jane"/>
     </div>
 
     <div class="pure-control-group">
         <label for="lname">Last Name</label>
-        <input type="text" id="lname" name="lname" placeholder="Doe" />
+        <input class="pure-u-1-2" type="text" id="lname" name="lname" placeholder="Doe" />
+    </div>
+
+    <div class="pure-control-group">
+        <label for="classification">Classification</label>
+        <select class="pure-u-1-2" id="classification" name="classification">
+            <option value="freshman" selected>Freshman</option>
+            <option value="sophomore">Sophomore</option>
+            <option value="junior">Junior</option>
+            <option value="senior">Senior</option>
+        </select>
+    </div>
+
+    <div class="pure-control-group">
+        <label for="grad-semester">Graduation Semester</label>
+        <select class="pure-u-1-4" id="grad-semester" name="grad-semester">
+            <option value="spring" selected>Spring</option>
+            <option value="fall">Fall</option>
+        </select>
+        <input class="pure-u-1-4" type="text" id="grad-year" name="grad-year" placeholder="2015" />
     </div>
 
     <div class="pure-controls">
-        <input type="submit" class="pure-button" value="Submit"/>
+        <input type="submit" class="pure-button" value="Save"/>
     </div>
 </form>
 
