@@ -75,6 +75,10 @@ def build_response(response_format, template_values):
         raise Exception("Invalid response format")
 
 def check_perms(user_data, perm, other_user=None):
+    # Admins can do anything
+    if users.is_current_user_admin():
+        return True
+
     if perm in user_data.user_permissions:
         return True
 
@@ -82,9 +86,6 @@ def check_perms(user_data, perm, other_user=None):
         return True
 
     if perm == 'other' and user_data != other_user:
-        return True
-
-    if perm == 'admin' and users.is_current_user_admin():
         return True
 
     return False
