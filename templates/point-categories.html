@@ -1,53 +1,84 @@
 {% extends "base.html" %}
 {% block title %}Members{% endblock %}
+{% block javascript %}
+<script>
+get_point_categories = function() {
+    console.log("Getting point categories!");
+    $.ajax({
+        url: "/api/point-categories",
+    }).success(function(data) {
+        $('#point-categories').empty();
+        $('#parent-categories').empty();
+
+        // Add a none option for parent categories
+        $('#parent-categories').append($('<option value="none">None</option>'));
+
+        $.each(data, function(key, value) {
+            // Add to the Point Categories display
+            li = $('<li>' + key + '</li>');
+            $('#point-categories').append(li);
+            if (value.length > 0) {
+                ul = $('<ul></ul>');
+                $.each(value, function(index, sub_cat) {
+                    ul.append($('<li>' + sub_cat + '</li>'));
+                });
+                $('#point-categories').append(ul);
+            }
+
+            // Add as an option for the select element
+            option = $('<option value="' + key + '">' + key + "</option>");
+            $('#parent-categories').append(option);
+        });
+    });
+}
+
+$(function() {
+    $('#category-form').submit(function (event) {
+        var data = {
+            name: $('input[name=name]').val(),
+            parent: $('#parent-categories')[0].value,
+        }
+
+        $.ajax({
+            url: $(this).attr('action'),
+            type: $(this).attr('method'),
+            data: data,
+            success: function() {
+                $('#outcome').html('<span style="color: green">Successfully saved!</span>');
+                get_point_categories();
+            }
+        }).fail(function(resp) {
+            // TODO This should be more user friendly
+            $('#outcome').html('<span style="color: red">There was a problem!</span>');
+        });
+        event.preventDefault();
+    });
+
+    get_point_categories();
+});
+</script>
+{% endblock %}
 {% block content %}
     <h1> Point Categories </h1>
-    <ul>
-        <li>Philanthropy</li>
-        <ul>
-            <li>Sub category 1</li>
-            <li>Sub category 2</li>
-        </ul>
-        <li>Meetings</li>
-    </ul>
+    <ul id='point-categories'></ul>
 
-    <form id="profile-form" method="put" action="/api/users/{{target_user.user_id}}" class="pure-form pure-form-aligned centered-form">
+    <h1> Create a New Category </h1>
+    <form id="category-form" method="post" action="/api/point-categories" class="pure-form pure-form-aligned">
         <div class="pure-control-group">
-            <label for="fname">First Name</label>
-            <input class="pure-u-1-2" type="text" id="fname" name="fname" value={{target_user.first_name}} />
+            <label>New Category</label>
+            <input type="text" name="name" />
         </div>
 
         <div class="pure-control-group">
-            <label for="lname">Last Name</label>
-            <input class="pure-u-1-2" type="text" id="lname" name="lname" value={{target_user.last_name}} />
-        </div>
-
-        <div class="pure-control-group">
-            <label for="classification">Classification</label>
-            <select class="pure-u-1-2" id="classification" name="classification">
-                <option value="freshman" {% if target_user.classification == "freshman" %}selected{%endif%}>Freshman</option>
-                <option value="sophomore"{% if target_user.classification == "sophomore" %}selected{%endif%}>Sophomore</option>
-                <option value="junior" {% if target_user.classification == "junior" %}selected{%endif%}>Junior</option>
-                <option value="senior" {% if target_user.classification == "senior" %}selected{%endif%}>Senior</option>
-            </select>
-        </div>
-
-        <div class="pure-control-group">
-            <label for="grad-semester">Graduation Semester</label>
-            <select class="pure-u-1-4" id="grad-semester" name="grad-semester">
-                <option value="spring" {% if target_user.graduation_semester == "spring" %}selected{%endif%}>Spring</option>
-                <option value="fall" {% if target_user.graduation_semester == "fall" %}selected{%endif%}>Fall</option>
-            </select>
-            <input class="pure-u-1-4" type="text" id="grad-year" name="grad-year" value={{target_user.graduation_year}} />
-        </div>
-
-        <div class="pure-control-group">
-            <label for="active">Active</label>
-            <input type="checkbox" id="active" name="active" {% if target_user.active %}checked{%endif%} />
+            <label>Parent</label>
+            <select id="parent-categories" name="categories"></select>
         </div>
 
         <div class="pure-controls">
             <input type="submit" class="pure-button" value="Save"/>
         </div>
     </form>
+
+    <p id="outcome"></p>
+
 {% endblock %}

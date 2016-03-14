@@ -7,7 +7,7 @@ from google.appengine.ext import testbed
 #from google.appengine.ext import ndb
 
 import main
-from models import UserData, PointException
+from models import UserData, PointException, PointCategory
 
 #pylint: disable=too-many-public-methods
 class MainTestCase(unittest.TestCase):
@@ -487,7 +487,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
     @staticmethod
     def setup_datastore():
         meetings_exception = PointException()
-        meetings_exception.point_type = "meetings"
+        meetings_exception.point_category = "meetings"
         meetings_exception.points_needed = 5
 
         u = UserData(id='100')
@@ -549,7 +549,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
         data = json.loads(response.data)
         expected = {
-            'point_type': "meetings",
+            'point_category': "meetings",
             'points_needed': 5,
         }
         self.assertEqual(expected, data)
@@ -569,7 +569,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
         data = json.loads(response.data)
         expected = {
-            'point_type': "meetings",
+            'point_category': "meetings",
             'points_needed': 5,
         }
         self.assertEqual(expected, data)
@@ -629,7 +629,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
         expected = {
             u'point_exceptions': [
                 {
-                    u'point_type': u"meetings",
+                    u'point_category': u"meetings",
                     u'points_needed': 5,
                 },
             ]
@@ -645,7 +645,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
         expected = {
             u'point_exceptions': [
                 {
-                    u'point_type': u"meetings",
+                    u'point_category': u"meetings",
                     u'points_needed': 5,
                 }
             ]
@@ -663,7 +663,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
     def test_post_own_point_exception(self):
         self.loginUser(user_id="100")
         post_data = {
-            u'point_type': u"philanthropy",
+            u'point_category': u"philanthropy",
             u'points_needed': 10,
         }
         response = self.app.post("/api/users/100/point-exceptions", data=post_data)
@@ -683,7 +683,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
     def test_post_other_user_point_exception_without_officer(self):
         self.loginUser(user_id="100")
         post_data = {
-            u'point_type': u"philanthropy",
+            u'point_category': u"philanthropy",
             u'points_needed': 10,
         }
         response = self.app.post("/api/users/200/point-exceptions", data=post_data)
@@ -695,7 +695,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
     def test_post_other_user_point_exception_as_officer(self):
         self.loginUser(user_id="200")
         post_data = {
-            u'point_type': u"philanthropy",
+            u'point_category': u"philanthropy",
             u'points_needed': 10,
         }
         response = self.app.post("/api/users/100/point-exceptions", data=post_data)
@@ -705,14 +705,14 @@ class PointExceptionsAPITestCase(unittest.TestCase):
         response_data = json.loads(response.data)
         self.assertEqual(post_data, response_data)
 
-    def test_post_existing_point_type_exception(self):
+    def test_post_existing_point_category_exception(self):
         self.loginUser(user_id="200")
         post_data = {
-            u'point_type': u"philanthropy",
+            u'point_category': u"philanthropy",
             u'points_needed': 10,
         }
         response = self.app.post("/api/users/100/point-exceptions", data=post_data)
-        post_data['point_type'] = u"meetings"
+        post_data['point_category'] = u"meetings"
         response = self.app.post("/api/users/100/point-exceptions", data=post_data)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.headers['location'],
@@ -728,7 +728,7 @@ class PermissionsAPITestCase(unittest.TestCase):
     @staticmethod
     def setup_datastore():
         meetings_exception = PointException()
-        meetings_exception.point_type = "meetings"
+        meetings_exception.point_category = "meetings"
         meetings_exception.points_needed = 5
 
         u = UserData(id='100')
@@ -881,6 +881,205 @@ class PermissionsAPITestCase(unittest.TestCase):
             u'permissions': [u"user"],
         }
         self.assertEqual(expected, response_data)
+
+
+class PointCategoriesAPITestCase(unittest.TestCase):
+
+    @staticmethod
+    def setup_datastore():
+        meetings_exception = PointException()
+        meetings_exception.point_category = "meetings"
+        meetings_exception.points_needed = 5
+
+        bloob_time = PointCategory()
+        bloob_time.name = "Bloob Time"
+        k1 = bloob_time.put()
+
+        mixers = PointCategory()
+        mixers.name = "Mixers"
+        k2 = mixers.put()
+
+        sisterhood = PointCategory()
+        sisterhood.name="Sisterhood"
+        sisterhood.sub_categories = [k1, k2]
+        sisterhood.put()
+
+        philanthropy = PointCategory()
+        philanthropy.name = "Philanthropy"
+        philanthropy.put()
+
+        u = UserData(id='100')
+        u.user_permissions = ['user']
+        u.user_id = '100'
+        u.active = True
+        u.first_name = "Bill"
+        u.last_name = "Gates"
+        u.classification = "senior"
+        u.graduation_year = 2015
+        u.graduation_semester = "fall"
+        u.point_exceptions = [
+            meetings_exception
+        ]
+        u.put()
+
+        u = UserData(id='200')
+        u.user_permissions = ['user', 'officer']
+        u.user_id = '200'
+        u.active = False
+        u.first_name = "Bob"
+        u.last_name = "Joe"
+        u.classification = "freshman"
+        u.graduation_year = 2016
+        u.graduation_semester = "spring"
+        u.point_exceptions = [
+            meetings_exception
+        ]
+        u.put()
+
+    def setUp(self):
+        # Used to debug 500 errors
+        main.app.config['TESTING'] = True
+        self.app = main.app.test_client()
+        self.testbed = testbed.Testbed()
+        self.testbed.activate()
+        self.testbed.init_user_stub()
+        self.testbed.init_memcache_stub()
+        self.testbed.init_datastore_v3_stub()
+        #ndb.get_context().clear_cache()
+        self.setup_datastore()
+        #pylint: disable=maybe-no-member
+
+    def tearDown(self):
+        self.testbed.deactivate()
+
+    def loginUser(self, email='user@example.com', user_id='123', is_admin=False):
+        self.testbed.setup_env(
+            user_email=email,
+            user_id=user_id,
+            user_is_admin='1' if is_admin else '0',
+            overwrite=True)
+
+    def test_get_point_category_list_as_officer(self):
+        self.loginUser(user_id="200")
+        response = self.app.get('/api/point-categories')
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.data)
+        expected = {
+            u'Sisterhood': [
+                u"Bloob Time",
+                u"Mixers",
+            ],
+
+            u'Philanthropy': []
+        }
+        self.assertEqual(expected, data)
+
+    def test_get_point_category_list_as_user(self):
+        self.loginUser(user_id="100")
+        response = self.app.get('/api/point-categories')
+        self.assertEqual(response.status_code, 403)
+
+        data = json.loads(response.data)
+        self.assertEqual("Don't have permission", data['message'])
+
+    def test_post_point_category_as_officer(self):
+        self.loginUser(user_id="200")
+        post_data = {
+            u'name': u"Academics",
+            u'parent': None,
+        }
+        response = self.app.post("/api/point-categories", data=post_data)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.headers['location'],
+                         "http://localhost/api/point-categories/Academics")
+
+        response = self.app.get("/api/point-categories")
+        response_data = json.loads(response.data)
+        expected = {
+            u'Academics': [],
+            u'Sisterhood': [u"Bloob Time", u"Mixers"],
+            u'Philanthropy': [],
+        }
+        self.assertEqual(expected, response_data)
+
+    def test_post_point_category_with_parent(self):
+        self.loginUser(user_id="200")
+        post_data = {
+            u'name': u"Academics",
+            u'parent': u"Philanthropy",
+        }
+        response = self.app.post("/api/point-categories", data=post_data)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.headers['location'],
+                         "http://localhost/api/point-categories/Academics")
+
+        response = self.app.get("/api/point-categories")
+        response_data = json.loads(response.data)
+        expected = {
+            u'Sisterhood': [u"Bloob Time", u"Mixers"],
+            u'Philanthropy': [u"Academics"],
+        }
+        self.assertEqual(expected, response_data)
+
+    def test_post_point_category_as_user(self):
+        self.loginUser(user_id="100")
+        post_data = {
+            u'name': u"Academics",
+            u'parent': u"Philanthropy",
+        }
+        response = self.app.post("/api/point-categories", data=post_data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_post_duplicate_point_category(self):
+        self.loginUser(user_id="200")
+        post_data = {
+            u'name': u"Philanthropy",
+            u'parent': None,
+        }
+        response = self.app.post("/api/point-categories", data=post_data)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.headers['location'],
+                         "http://localhost/api/point-categories/Philanthropy")
+
+        response = self.app.get("/api/point-categories")
+        response_data = json.loads(response.data)
+        expected = {
+            u'Sisterhood': [u"Bloob Time", u"Mixers"],
+            u'Philanthropy': [],
+        }
+        self.assertEqual(expected, response_data)
+
+    def test_post_duplicate_point_sub_category(self):
+        self.loginUser(user_id="200")
+        post_data = {
+            u'name': u"Bloob Time",
+            u'parent': None,
+        }
+        response = self.app.post("/api/point-categories", data=post_data)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.headers['location'],
+                         "http://localhost/api/point-categories/BloobTime")
+
+        response = self.app.get("/api/point-categories")
+        response_data = json.loads(response.data)
+        expected = {
+            u'Bloob Time': [],
+            u'Sisterhood': [u"Mixers"],
+            u'Philanthropy': [],
+        }
+        self.assertEqual(expected, response_data)
+
+    def test_get_point_category(self):
+        response = self.app.get("/api/point-categories/Sisterhood")
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.data)
+        expected = {
+            u'name': u"Sisterhood",
+            u'sub_categories': [u"Bloob Time", u"Mixers"],
+        }
+        self.assertEqual(expected, data)
 
 
 if __name__ == '__main__':

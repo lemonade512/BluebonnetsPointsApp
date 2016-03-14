@@ -1,10 +1,36 @@
 from google.appengine.ext import ndb
 from google.appengine.api import users
 
+DEFAULT_ROOT_KEY = "default_root_point_category"
 
-#TODO do we actually need this?
-class PointType(ndb.Model):
+
+class PointCategory(ndb.Model):
+    # The name of the point type (Sisterhood, Philanthropy, etc.)
     name = ndb.StringProperty()
+
+    # A list of the sub-categories for this point type
+    sub_categories = ndb.KeyProperty(kind="PointCategory", repeated=True)
+
+    @staticmethod
+    def root_key():
+        """ Creates a root key for all point categories. """
+        return ndb.Key("RootPointCategory", DEFAULT_ROOT_KEY)
+
+    @property
+    def parent(self):
+        return PointCategory.query().filter(
+            PointCategory.sub_categories.IN([self.key])).get()
+
+    @staticmethod
+    def get_from_name(name):
+        # TODO this is not strongly consistent because PointCategories are not stored in
+        # an entity group and we are not querying by key only.
+        q = PointCategory.query(ancestor=PointCategory.root_key())
+        for p in q:
+            if p.name == name:
+                return p
+
+        return None
 
 
 class PointRequirement(ndb.Model):
@@ -14,7 +40,7 @@ class PointRequirement(ndb.Model):
     tries adding a point requirement with a type that already has a point
     requirement it should cause an error.
     """
-    point_type = ndb.StringProperty()
+    point_category = ndb.StringProperty()
     points_needed = ndb.IntegerProperty(indexed=False)
 
 
@@ -24,8 +50,8 @@ class PointException(ndb.Model):
     # The type of points to make an exception for
     # TODO add a `choices` option to the string property depending on point
     # type options
-    #point_type = ndb.StructuredProperty(PointType, indexed=False)
-    point_type = ndb.StringProperty(indexed=False)
+    #point_category = ndb.StructuredProperty(PointCategory, indexed=False)
+    point_category = ndb.StringProperty(indexed=False)
 
     # The number of points that will actually be needed
     points_needed = ndb.IntegerProperty(indexed=False)
@@ -135,7 +161,7 @@ class UserData(ndb.Model):
 class PointRecord(ndb.Model):
     user_data = ndb.KeyProperty(kind="UserData")
     event = ndb.KeyProperty(kind="Event")
-    point_type = ndb.KeyProperty(kind="PointType")
+    point_category = ndb.KeyProperty(kind="PointCategory")
     points_earned = ndb.IntegerProperty()
 
 

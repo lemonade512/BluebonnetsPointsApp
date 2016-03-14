@@ -8,7 +8,7 @@ from flask_restful import Resource, Api
 from google.appengine.api import users
 from google.appengine.ext import deferred
 
-from models import UserData, PointException
+from models import UserData, PointException, PointCategory
 from utils import render_jinja_template
 from permissions import require_permissions
 from update_schema import run_update_schema
@@ -122,6 +122,11 @@ def signup():
 @require_permissions(['user'])
 def dashboard():
     return redirect(url_for("index"))
+
+@app.route('/point-categories')
+@require_permissions(['officer'])
+def point_categories():
+    return render_jinja_template('point-categories.html')
 
 # **************************************************************************** #
 #                              Error Handlers                                  #
@@ -241,7 +246,7 @@ class UserAPI(Resource):
             "permissions": user.user_permissions,
             "user_id": user.user_id,
             "point_exceptions": [{
-                "point_type": exc.point_type,
+                "point_category": exc.point_category,
                 "points_needed": exc.points_needed,
             } for exc in user.point_exceptions],
         }
@@ -299,7 +304,7 @@ class ExceptionAPI(Resource):
 
         exc = user.point_exceptions[index]
         data = {
-            "point_type": exc.point_type,
+            "point_category": exc.point_category,
             "points_needed": exc.points_needed,
         }
 
@@ -328,7 +333,7 @@ class ExceptionListAPI(Resource):
         user = UserData.get_user_from_id(user_id)
         data = {
             "point_exceptions": [{
-                "point_type": exc.point_type,
+                "point_category": exc.point_category,
                 "points_needed": exc.points_needed,
             } for exc in user.point_exceptions],
         }
@@ -346,11 +351,11 @@ class ExceptionListAPI(Resource):
         data = request.form
         p = None
         for exc in user.point_exceptions:
-            if exc.point_type == data['point_type']:
+            if exc.point_category == data['point_category']:
                 p = exc
         if not p:
             p = PointException()
-            p.point_type = data.get('point_type', type=str)
+            p.point_category = data.get('point_category', type=str)
             p.points_needed = data.get('points_needed', type=int)
             user.point_exceptions.append(p)
         else:
@@ -409,13 +414,110 @@ class PermissionAPI(Resource):
         user.put()
 
 
+class PointCategoryListAPI(Resource):
+
+    @require_permissions(['officer'], output_format='json')
+    def get(self):
+        point_categories = PointCategory.query(ancestor=PointCategory.root_key())
+        out = {}
+        for p in point_categories:
+            if p.parent is None:
+                out[p.name] = []
+                invalid_keys = []
+                for key in p.sub_categories:
+                    sub = key.get()
+
+                    # The key in sub_categories is no longer valid
+                    if sub is None:
+                        invalid_keys.append(key)
+                    else:
+                        out[p.name].append(sub.name)
+
+                for key in invalid_keys:
+                    p.sub_categories.remove(key)
+                if invalid_keys:
+                    p.put()
+
+        return jsonify(**out)
+
+    @require_permissions(['officer'], output_format='json')
+    def post(self):
+        """ Creates a new point category or updates a duplicate one
+
+        If this function is given a point category with the same name as one
+        that already exists, it will update the existing point category. It
+        handles removing and adding necessary keys of parent categories.
+        """
+        data = request.form
+        new_category = None
+        new_key = None
+
+        # TODO we shouldn't put anything in the datastore if there is an error.
+        # Therefore, we should wait until the end of the function to call a
+        # put if possible.
+
+        # Check to see if the category already exists
+        for category in PointCategory.query():
+            if category.name == data['name']:
+                new_category = category
+                new_key = new_category.key
+
+                parent = new_category.parent
+                if parent is not None:
+                    parent.sub_categories.remove(new_key)
+                    parent.put()
+
+        # If the category doesn't exist, create a new one
+        if not new_category:
+            new_category = PointCategory(parent=PointCategory.root_key())
+            new_category.name = data['name']
+            new_key = new_category.put()
+
+        # If necessary, add the proper key to the parent category
+        parent = data.get('parent', None)
+        # TODO Should I really also be checking for "none"? Is there a
+        # better way?
+        if parent is not None and parent != "none":
+            print "Getting parent", parent
+            parent = PointCategory.get_from_name(parent)
+            print "Got", parent
+            parent.sub_categories.append(new_key)
+            parent.put()
+
+        response = jsonify()
+        response.status_code = 201
+        response.headers['location'] = "/api/point-categories/" + new_category.name.replace(" ", "")
+        return response
+
+
+class PointCategoryAPI(Resource):
+
+    def get(self, name):
+        category = PointCategory.get_from_name(name)
+        if category is None:
+            response = jsonify(message="Resource does not exist")
+            response.status_code = 404
+            return response
+
+        sub_categories = []
+        for cat in category.sub_categories:
+            sub_categories.append(cat.get().name)
+
+        data = {
+            "sub_categories": sub_categories,
+            "name": category.name,
+        }
+        return jsonify(**data)
+
+
 api.add_resource(UserListAPI, '/api/users', endpoint='users')
 api.add_resource(UserAPI, '/api/users/<string:user_id>', endpoint='user')
 api.add_resource(ExceptionListAPI, '/api/users/<string:user_id>/point-exceptions')
 api.add_resource(ExceptionAPI, '/api/users/<string:user_id>/point-exceptions/<int:index>')
 api.add_resource(PermissionListAPI, '/api/users/<string:user_id>/permissions')
 api.add_resource(PermissionAPI, '/api/users/<string:user_id>/permissions/<string:perm>')
-api.add_resource(PointTypeListAPI, '/api/point-types')
+api.add_resource(PointCategoryListAPI, '/api/point-categories')
+api.add_resource(PointCategoryAPI, '/api/point-categories/<string:name>')
 
 
 # *************************************************************************** #
@@ -424,6 +526,10 @@ api.add_resource(PointTypeListAPI, '/api/point-types')
 
 @app.route("/admin/updateschema")
 def updateschema():
+    # NOTE: Sometimes there can be issues with the prerendering done by the
+    # chrome address bar. In that case, you might see duplicate GET requests.
+    # Be very aware of this when updating schema or going to endpoints that
+    # could potentially destroy user data.
     deferred.defer(run_update_schema)
     return 'Schema migration successfully initiated.'
 

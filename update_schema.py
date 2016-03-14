@@ -3,7 +3,7 @@ import logging
 from google.appengine.ext import ndb
 from google.appengine.ext import deferred
 
-from models import UserData
+from models import UserData, PointCategory
 
 BATCH_SIZE = 100  # ideal batch size may vary based on entity size.
 
@@ -16,9 +16,6 @@ def run_update_schema(cursor=None, num_updated=0):
         # In this example, the default values of 0 for num_votes and avg_rating
         # are acceptable, so we don't need this loop.  If we wanted to manually
         # manipulate property values, it might go something like this:
-        u.classification = "freshman"
-        u.graduation_semester = "spring"
-        u.graduation_year = 2016
         to_put.append(u)
 
     if to_put:
