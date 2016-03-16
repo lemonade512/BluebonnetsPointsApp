@@ -891,20 +891,20 @@ class PointCategoriesAPITestCase(unittest.TestCase):
         meetings_exception.point_category = "meetings"
         meetings_exception.points_needed = 5
 
-        bloob_time = PointCategory()
+        bloob_time = PointCategory(parent=PointCategory.root_key())
         bloob_time.name = "Bloob Time"
         k1 = bloob_time.put()
 
-        mixers = PointCategory()
+        mixers = PointCategory(parent=PointCategory.root_key())
         mixers.name = "Mixers"
         k2 = mixers.put()
 
-        sisterhood = PointCategory()
+        sisterhood = PointCategory(parent=PointCategory.root_key())
         sisterhood.name="Sisterhood"
         sisterhood.sub_categories = [k1, k2]
         sisterhood.put()
 
-        philanthropy = PointCategory()
+        philanthropy = PointCategory(parent=PointCategory.root_key())
         philanthropy.name = "Philanthropy"
         philanthropy.put()
 
