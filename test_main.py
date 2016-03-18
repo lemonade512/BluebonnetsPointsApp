@@ -2,12 +2,13 @@ import unittest
 import urllib
 import json
 import mock
+import datetime
 
 from google.appengine.ext import testbed
 #from google.appengine.ext import ndb
 
 import main
-from models import UserData, PointException, PointCategory
+from models import UserData, PointException, PointCategory, Event
 
 #pylint: disable=too-many-public-methods
 class MainTestCase(unittest.TestCase):
@@ -1080,6 +1081,302 @@ class PointCategoriesAPITestCase(unittest.TestCase):
             u'sub_categories': [u"Bloob Time", u"Mixers"],
         }
         self.assertEqual(expected, data)
+
+    # TODO
+    #def test_get_point_category_with_spaces(self):
+    #def test_post_duplicate_point_category_with_diff_spaces(self):
+    #def test_delete_point_category_as_officer(self):
+    #def test_delete_point_category_as_user(self):
+    #def test_delete_point_category_with_spaces(self):
+
+
+class EventAPITestCase(unittest.TestCase):
+
+    @staticmethod
+    def setup_datastore():
+        bloob_time = PointCategory(parent=PointCategory.root_key())
+        bloob_time.name = "Bloob Time"
+        bloob_time_key = bloob_time.put()
+
+        mixers = PointCategory(parent=PointCategory.root_key())
+        mixers.name = "Mixers"
+        mixers_key = mixers.put()
+
+        sisterhood = PointCategory(parent=PointCategory.root_key())
+        sisterhood.name="Sisterhood"
+        sisterhood.sub_categories = [bloob_time_key, mixers_key]
+        sisterhood_key = sisterhood.put()
+
+        philanthropy = PointCategory(parent=PointCategory.root_key())
+        philanthropy.name = "Philanthropy"
+        philanthropy_key = philanthropy.put()
+
+        u = UserData(id='100')
+        u.user_permissions = ['user']
+        u.user_id = '100'
+        u.active = True
+        u.first_name = "Bill"
+        u.last_name = "Gates"
+        u.classification = "senior"
+        u.graduation_year = 2015
+        u.graduation_semester = "fall"
+        u.point_exceptions = []
+        u.put()
+
+        u = UserData(id='200')
+        u.user_permissions = ['user', 'officer']
+        u.user_id = '200'
+        u.active = False
+        u.first_name = "Bob"
+        u.last_name = "Joe"
+        u.classification = "freshman"
+        u.graduation_year = 2016
+        u.graduation_semester = "spring"
+        u.point_exceptions = []
+        u.put()
+
+        e = Event(parent=Event.root_key())
+        e.name = "My First Event"
+        # TODO make some actual test dates
+        e.date = datetime.datetime(2016, 8, 3)
+        e.point_category = philanthropy_key
+        e.put()
+
+        e = Event(parent=Event.root_key())
+        e.name = "Sisterhood Event"
+        e.date = datetime.datetime(2016, 8, 2)
+        e.point_category = sisterhood_key
+        e.put()
+
+        e = Event(parent=Event.root_key())
+        e.name = "Bloob Time Event"
+        e.date = datetime.datetime(2016,9,1)
+        e.point_category = bloob_time_key
+        e.put()
+
+    def setUp(self):
+        # Used to debug 500 errors
+        main.app.config['TESTING'] = True
+        self.app = main.app.test_client()
+        self.testbed = testbed.Testbed()
+        self.testbed.activate()
+        self.testbed.init_user_stub()
+        self.testbed.init_memcache_stub()
+        self.testbed.init_datastore_v3_stub()
+        #ndb.get_context().clear_cache()
+        self.setup_datastore()
+        #pylint: disable=maybe-no-member
+
+    def tearDown(self):
+        self.testbed.deactivate()
+
+    def loginUser(self, email='user@example.com', user_id='123', is_admin=False):
+        self.testbed.setup_env(
+            user_email=email,
+            user_id=user_id,
+            user_is_admin='1' if is_admin else '0',
+            overwrite=True)
+
+    def test_get_all_events(self):
+        self.loginUser(user_id="100")
+        response = self.app.get('/api/events')
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.data)
+        expected = {
+            u'events': [
+                {
+                    u'date': u"Tue, 02 Aug 2016 00:00:00 GMT",
+                    u'point-category': u"Sisterhood",
+                    u'name': u"Sisterhood Event",
+                },
+                {
+                    u'date': u"Wed, 03 Aug 2016 00:00:00 GMT",
+                    u'point-category': u"Philanthropy",
+                    u'name': u"My First Event",
+                },
+                {
+                    u'date': u"Thu, 01 Sep 2016 00:00:00 GMT",
+                    u'point-category': u"Bloob Time",
+                    u'name': u"Bloob Time Event",
+                },
+            ]
+        }
+        self.assertEqual(expected, data)
+
+    def test_get_root_and_child_category_events(self):
+        self.loginUser(user_id="100")
+        response = self.app.get("/api/events?category=Sisterhood")
+        #self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.data)
+        expected = {
+            u'events': [
+                {
+                    u'date': u"Tue, 02 Aug 2016 00:00:00 GMT",
+                    u'point-category': u"Sisterhood",
+                    u'name': u"Sisterhood Event",
+                },
+                {
+                    u'date': u"Thu, 01 Sep 2016 00:00:00 GMT",
+                    u'point-category': u"Bloob Time",
+                    u'name': u"Bloob Time Event",
+                },
+            ]
+        }
+        self.assertEqual(expected, data)
+
+    def test_get_child_events(self):
+        self.loginUser(user_id="100")
+        response = self.app.get("/api/events?category=Bloob%20Time")
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.data)
+        expected = {
+            u'events': [
+                {
+                    u'date': u"Thu, 01 Sep 2016 00:00:00 GMT",
+                    u'point-category': u"Bloob Time",
+                    u'name': u"Bloob Time Event",
+                },
+            ]
+        }
+        self.assertEqual(expected, data)
+
+    def test_get_single_event_by_name(self):
+        self.loginUser(user_id="100")
+        response = self.app.get("/api/events/Bloob%20Time%20Event")
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.data)
+        expected = {
+            u'date': u"Thu, 01 Sep 2016 00:00:00 GMT",
+            u'point-category': u"Bloob Time",
+            u'name': u"Bloob Time Event",
+        }
+        self.assertEqual(expected, data)
+
+    def test_get_single_event_without_spaces(self):
+        self.loginUser(user_id="100")
+        response = self.app.get("/api/events/BloobTimeEvent")
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.data)
+        expected = {
+            u'date': u"Thu, 01 Sep 2016 00:00:00 GMT",
+            u'point-category': u"Bloob Time",
+            u'name': u"Bloob Time Event",
+        }
+        self.assertEqual(expected, data)
+
+    def test_get_nonexistent_event(self):
+        self.loginUser(user_id="100")
+        response = self.app.get("/api/events/ANonExistentEvent")
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_event_as_user(self):
+        self.loginUser(user_id="100")
+        post_data = {
+            u'name': u"Fall Ball 2016",
+            u'date': u"2016-08-13",
+            u'point-category': u"Philanthropy",
+        }
+        response = self.app.post("/api/events", data=post_data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_post_event_as_officer(self):
+        self.loginUser(user_id="200")
+        post_data = {
+            u'name': u"Spring Fling 2016",
+            u'date': u"2016-03-01",
+            u'point-category': "Bloob Time",
+        }
+        response = self.app.post("/api/events", data=post_data)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.headers['location'],
+                         "http://localhost/api/events/SpringFling2016")
+
+        response = self.app.get("/api/events")
+        response_data = json.loads(response.data)
+        expected = {
+            u'events': [
+                {
+                    u'date': u'Tue, 01 Mar 2016 00:00:00 GMT',
+                    u'name': u'Spring Fling 2016',
+                    u'point-category': u'Bloob Time'
+                },
+                {
+                    u'date': u'Tue, 02 Aug 2016 00:00:00 GMT',
+                    u'name': u'Sisterhood Event',
+                    u'point-category': u'Sisterhood'
+                },
+                {
+                    u'date': u'Wed, 03 Aug 2016 00:00:00 GMT',
+                    u'name': u'My First Event',
+                    u'point-category': u'Philanthropy'
+                },
+                {
+                    u'date': u'Thu, 01 Sep 2016 00:00:00 GMT',
+                    u'name': u'Bloob Time Event',
+                    u'point-category': u'Bloob Time'
+                }
+            ]
+        }
+        self.assertEqual(expected, response_data)
+
+    def test_post_event_duplicate_name(self):
+        self.loginUser(user_id="200")
+        post_data = {
+            u'name': u"Sisterhood Event",
+            u'date': u"2016-03-01",
+            u'point-category': "Bloob Time",
+        }
+        response = self.app.post("/api/events", data=post_data)
+        self.assertEqual(response.status_code, 409)
+
+    def test_post_event_bad_date(self):
+        main.app.config['TESTING'] = False
+        self.loginUser(user_id="200")
+        post_data = {
+            u'name': u"Fun Event",
+            u'date': u"2016-30-01",
+            u'point-category': "Bloob Time",
+        }
+        response = self.app.post("/api/events", data=post_data)
+        self.assertEqual(response.status_code, 500)
+
+    def test_delete_event_as_user(self):
+        self.loginUser(user_id="100")
+        response = self.app.delete("/api/events/BloobTimeEvent")
+        self.assertEqual(response.status_code, 403)
+
+    def test_delete_event_as_officer(self):
+        self.loginUser(user_id="200")
+        response = self.app.delete("/api/events/BloobTimeEvent")
+        self.assertEqual(response.status_code, 200)
+
+        response = self.app.get("/api/events")
+        response_data = json.loads(response.data)
+        expected = {
+            u'events': [
+                {
+                    u'date': u'Tue, 02 Aug 2016 00:00:00 GMT',
+                    u'name': u'Sisterhood Event',
+                    u'point-category': u'Sisterhood'
+                },
+                {
+                    u'date': u'Wed, 03 Aug 2016 00:00:00 GMT',
+                    u'name': u'My First Event',
+                    u'point-category': u'Philanthropy'
+                }
+            ]
+        }
+        self.assertEqual(expected, response_data)
+
+    def test_delete_non_existent_event(self):
+        self.loginUser(user_id="200")
+        response = self.app.delete("/api/events/NonExistentEvent")
+        self.assertEqual(response.status_code, 404)
 
 
 if __name__ == '__main__':

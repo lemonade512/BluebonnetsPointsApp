@@ -1,7 +1,7 @@
 from google.appengine.ext import ndb
 from google.appengine.api import users
 
-DEFAULT_ROOT_KEY = "default_root_point_category"
+DEFAULT_ROOT_KEY = "default_root_key"
 
 
 class PointCategory(ndb.Model):
@@ -23,16 +23,25 @@ class PointCategory(ndb.Model):
 
     @staticmethod
     def get_from_name(name):
-        # TODO this is not strongly consistent because PointCategories are not stored in
-        # an entity group and we are not querying by key only.
+        """ Gets a point category matching the given name.
+
+        The spaces in `name` are ignored in order to make urls look nicer
+        without any spaces.
+        """
+        # TODO since this function ignores spaces in the PointCategory name,
+        # I should make sure we can't make duplicate point categories after
+        # spaces have been removed.
         q = PointCategory.query(ancestor=PointCategory.root_key())
         for p in q:
-            if p.name == name:
+            if p.name.replace(" ", "") == name.replace(" ", ""):
                 return p
 
         return None
 
-
+# TODO do we actually need this class? Couldn't we just have the PointCategory
+# keep track of its default requirements?
+# NOTE: We probably do need this class (or something like it) to handle the
+# case where babies have different requirements than full members.
 class PointRequirement(ndb.Model):
     """ A global requirement for the number of points needed for a point type
 
@@ -161,16 +170,63 @@ class UserData(ndb.Model):
 class PointRecord(ndb.Model):
     user_data = ndb.KeyProperty(kind="UserData")
     event = ndb.KeyProperty(kind="Event")
-    point_category = ndb.KeyProperty(kind="PointCategory")
-    points_earned = ndb.IntegerProperty()
+
+    # NOTE: I believe we can just get the point category associated with the
+    # event and not worry about keeping track of the PointCategory for a
+    # PointRecord.
+    #point_category = ndb.KeyProperty(kind="PointCategory")
+
+    points_earned = ndb.FloatProperty()
 
 
+# TODO how should I handle timezones? Also, how should I handle dates without
+# times?
 class Event(ndb.Model):
-    event_name = ndb.StringProperty()
-    event_date = ndb.DateTimeProperty()
+    name = ndb.StringProperty()
+    date = ndb.DateTimeProperty()
+    point_category = ndb.KeyProperty(kind="PointCategory")
     # TODO should I add an archived property?
+
+    def delete(self):
+        """ Deletes self from the DataStore.
+
+        Note: I tried overriding the __del__ method but ran into a bunch of
+        problems, so use this method instead. If you try using the __del__
+        method it may get called way more often than expected. I believe it
+        is most likely used by appengine itself so be very careful.
+        """
+
+        # TODO test the deletion of PointRecords
+        # Delete all PointRecords associated with this event
+        q = PointRecord.query(PointRecord.event == self.key)
+        for r in q:
+            r.key.delete()
+
+        # Delete the entity from the datastore.
+        self.key.delete()
 
     @property
     def point_records(self):
         return PointRecord.query().filter(PointRecord.event == self.key)
+
+    @staticmethod
+    def root_key():
+        """ Creates a root key for all events. """
+        # TODO having the same key for all events may be inefficient, so
+        # at some point I should look into changing this.
+        return ndb.Key("RootEvent", DEFAULT_ROOT_KEY)
+
+    @staticmethod
+    def get_from_name(name):
+        """ Gets an event matching the given name.
+
+        The spaces in `name` are ignored in order to make urls look nicer
+        without any spaces.
+        """
+        q = Event.query(ancestor=Event.root_key())
+        for e in q:
+            if e.name.replace(" ", "") == name.replace(" ", ""):
+                return e
+
+        return None
 

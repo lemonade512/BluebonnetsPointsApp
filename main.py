@@ -7,8 +7,9 @@ from flask import Flask, request, redirect, url_for, jsonify
 from flask_restful import Resource, Api
 from google.appengine.api import users
 from google.appengine.ext import deferred
+from datetime import datetime
 
-from models import UserData, PointException, PointCategory
+from models import UserData, PointException, PointCategory, Event, PointRecord
 from utils import render_jinja_template
 from permissions import require_permissions
 from update_schema import run_update_schema
@@ -464,6 +465,7 @@ class PointCategoryListAPI(Resource):
 
                 parent = new_category.parent
                 if parent is not None:
+                    # Update old parent sub categories
                     parent.sub_categories.remove(new_key)
                     parent.put()
 
@@ -478,9 +480,7 @@ class PointCategoryListAPI(Resource):
         # TODO Should I really also be checking for "none"? Is there a
         # better way?
         if parent is not None and parent != "none":
-            print "Getting parent", parent
             parent = PointCategory.get_from_name(parent)
-            print "Got", parent
             parent.sub_categories.append(new_key)
             parent.put()
 
@@ -510,6 +510,106 @@ class PointCategoryAPI(Resource):
         return jsonify(**data)
 
 
+class EventListAPI(Resource):
+
+    def get(self):
+        """ Gets all events that have been created.
+
+        URL Args:
+            category (str): The category you want the events for. If category
+                is 'all', then this will return all events. Any sub_categories
+                will also be queried for events.
+        """
+        category = request.args.get("category", "all")
+        if category == 'all':
+            events = Event.query()
+        else:
+            category = PointCategory.get_from_name(category)
+            if category is None:
+                response = jsonify(message="Category does not exist")
+                response.status_code = 404
+                return response
+
+            keys = []
+            keys.append(category.key)
+            keys.extend(category.sub_categories)
+
+            events = Event.query(Event.point_category.IN(keys))
+
+        events = events.order(Event.date)
+
+        out = {'events': []}
+        for event in events:
+            out['events'].append({
+                "name": event.name,
+                "date": event.date,
+                "point-category": event.point_category.get().name,
+            })
+
+        return jsonify(**out)
+
+    @require_permissions(['officer'], output_format='json')
+    def post(self):
+        """ Creates a new event. """
+        data = request.form
+        new_category = None
+        new_key = None
+
+        # Don't allow duplicate events
+        event = Event.get_from_name(data['name'])
+        if event is not None:
+            response = jsonify(message="Duplicate resource")
+            response.status_code = 409
+            return response
+
+        # Get the point category by name
+        point_category = PointCategory.get_from_name(data['point-category'])
+        if point_category is None:
+            raise Exception("Unknonwn point category: " + data['point-category'])
+
+        new_event = Event(parent=Event.root_key())
+        new_event.date = datetime.strptime(data['date'], "%Y-%m-%d")
+        new_event.name = data['name']
+        new_event.point_category = point_category.key
+        new_event.put()
+
+        response = jsonify()
+        response.status_code = 201
+        response.headers['location'] = "/api/events/" + new_event.name.replace(" ", "")
+        return response
+
+
+class EventAPI(Resource):
+
+    def get(self, event):
+        event = Event.get_from_name(event)
+        if event is None:
+            # TODO this code is duplicated, maybe make some sort of default
+            # handler that can be called for any resource that doesn't exist?
+            response = jsonify(message="Resource does not exist")
+            response.status_code = 404
+            return response
+
+        out = {
+            u'name': event.name,
+            u'date': event.date,
+            u'point-category': event.point_category.get().name,
+        }
+        return jsonify(**out)
+
+    @require_permissions(['officer'], output_format='json')
+    def delete(self, event):
+        event = Event.get_from_name(event)
+        if event is None:
+            # TODO this code is duplicated, maybe make some sort of default
+            # handler that can be called for any resource that doesn't exist?
+            response = jsonify(message="Resource does not exist")
+            response.status_code = 404
+            return response
+
+        event.delete()
+
+
 api.add_resource(UserListAPI, '/api/users', endpoint='users')
 api.add_resource(UserAPI, '/api/users/<string:user_id>', endpoint='user')
 api.add_resource(ExceptionListAPI, '/api/users/<string:user_id>/point-exceptions')
@@ -518,6 +618,8 @@ api.add_resource(PermissionListAPI, '/api/users/<string:user_id>/permissions')
 api.add_resource(PermissionAPI, '/api/users/<string:user_id>/permissions/<string:perm>')
 api.add_resource(PointCategoryListAPI, '/api/point-categories')
 api.add_resource(PointCategoryAPI, '/api/point-categories/<string:name>')
+api.add_resource(EventListAPI, '/api/events')
+api.add_resource(EventAPI, '/api/events/<string:event>')
 
 
 # *************************************************************************** #
