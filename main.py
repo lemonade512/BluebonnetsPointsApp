@@ -127,7 +127,20 @@ def dashboard():
 @app.route('/point-categories')
 @require_permissions(['officer'])
 def point_categories():
-    return render_jinja_template('point-categories.html')
+    template_values = {
+        'active_page': 'point-categories',
+    }
+    return render_jinja_template('point-categories.html', template_values)
+
+@app.route('/events')
+def event_list():
+    template_values = {
+        'active_page': 'events',
+    }
+    return render_jinja_template('events.html', template_values)
+
+#app.route('/events/<event>')
+#def event(event):
 
 # **************************************************************************** #
 #                              Error Handlers                                  #
