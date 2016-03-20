@@ -217,6 +217,16 @@ class UserListAPI(Resource):
         user_data.first_name = data['fname']
         if data['lname'] == "":
             raise Exception("The first name was empty")
+
+        # TODO A duplicate username should produce a better error than a 500
+        other_users = UserData.query()
+        other_user = None
+        for user in other_users:
+            if user.username == data['fname'] + data['lname']:
+                other_user = user
+        if other_user is not None:
+            raise Exception("There is already a user with that name.")
+
         user_data.last_name = data['lname']
         user_data.graduation_year = int(data['grad_year'])
         user_data.graduation_semester = data['grad_semester']
