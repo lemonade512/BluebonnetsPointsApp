@@ -368,6 +368,19 @@ class UsersAPITestCase(unittest.TestCase):
         response = self.app.post("/api/users", data=post_data)
         self.assertEqual(500, response.status_code)
 
+    def test_post_user_list_duplicate_username(self):
+        main.app.config['TESTING'] = False
+        self.loginUser(user_id="300")
+        post_data = {
+            u'fname': u"Bill",
+            u'lname': u"Gates",
+            u'classification': u"senior",
+            u'grad_year': 2016,
+            u'grad_semester': u"spring",
+        }
+        response = self.app.post("/api/users", data=post_data)
+        self.assertEqual(500, response.status_code)
+
     def test_get_own_user(self):
         self.loginUser(user_id="100")
         response = self.app.get('/api/users/100')
@@ -1137,7 +1150,6 @@ class EventAPITestCase(unittest.TestCase):
 
         e = Event(parent=Event.root_key())
         e.name = "My First Event"
-        # TODO make some actual test dates
         e.date = datetime.datetime(2016, 8, 3)
         e.point_category = philanthropy_key
         e.put()
@@ -1377,6 +1389,157 @@ class EventAPITestCase(unittest.TestCase):
         self.loginUser(user_id="200")
         response = self.app.delete("/api/events/NonExistentEvent")
         self.assertEqual(response.status_code, 404)
+
+
+class PointRecordAPITestCase(unittest.TestCase):
+
+    @staticmethod
+    def setup_datastore():
+        meetings_exception = PointException()
+        meetings_exception.point_category = "meetings"
+        meetings_exception.points_needed = 5
+
+        bloob_time = PointCategory(parent=PointCategory.root_key())
+        bloob_time.name = "Bloob Time"
+        bloob_time_key = bloob_time.put()
+
+        mixers = PointCategory(parent=PointCategory.root_key())
+        mixers.name = "Mixers"
+        mixers_key = mixers.put()
+
+        sisterhood = PointCategory(parent=PointCategory.root_key())
+        sisterhood.name="Sisterhood"
+        sisterhood.sub_categories = [bloob_time_key, mixers_key]
+        sisterhood_key = sisterhood.put()
+
+        philanthropy = PointCategory(parent=PointCategory.root_key())
+        philanthropy.name = "Philanthropy"
+        philanthropy_key = philanthropy.put()
+
+        u = UserData(id='100')
+        u.user_permissions = ['user']
+        u.user_id = '100'
+        u.active = True
+        u.first_name = "Bill"
+        u.last_name = "Gates"
+        u.classification = "senior"
+        u.graduation_year = 2015
+        u.graduation_semester = "fall"
+        u.point_exceptions = [
+            meetings_exception
+        ]
+        u.put()
+
+        u = UserData(id='200')
+        u.user_permissions = ['user', 'officer']
+        u.user_id = '200'
+        u.active = False
+        u.first_name = "Bob"
+        u.last_name = "Joe"
+        u.classification = "freshman"
+        u.graduation_year = 2016
+        u.graduation_semester = "spring"
+        u.point_exceptions = [
+            meetings_exception
+        ]
+        u.put()
+
+        e = Event(parent=Event.root_key())
+        e.name = "My First Event"
+        e.date = datetime.datetime(2016, 8, 3)
+        e.point_category = philanthropy_key
+        e.put()
+
+        e = Event(parent=Event.root_key())
+        e.name = "Sisterhood Event"
+        e.date = datetime.datetime(2016, 8, 2)
+        e.point_category = sisterhood_key
+        e.put()
+
+        e = Event(parent=Event.root_key())
+        e.name = "Bloob Time Event"
+        e.date = datetime.datetime(2016,9,1)
+        e.point_category = bloob_time_key
+        e.put()
+
+    def setUp(self):
+        # Used to debug 500 errors
+        main.app.config['TESTING'] = True
+        self.app = main.app.test_client()
+        self.testbed = testbed.Testbed()
+        self.testbed.activate()
+        self.testbed.init_user_stub()
+        self.testbed.init_memcache_stub()
+        self.testbed.init_datastore_v3_stub()
+        #ndb.get_context().clear_cache()
+        self.setup_datastore()
+        #pylint: disable=maybe-no-member
+
+    def tearDown(self):
+        self.testbed.deactivate()
+
+    def loginUser(self, email='user@example.com', user_id='123', is_admin=False):
+        self.testbed.setup_env(
+            user_email=email,
+            user_id=user_id,
+            user_is_admin='1' if is_admin else '0',
+            overwrite=True)
+
+    def test_put_nonexistent_point_record(self):
+        self.loginUser(user_id="200")
+        put_data = {
+            u'username': u"BillGates",
+            u'event_name': u"Bloob Time Event",
+            u'points-earned': 2,
+        }
+        response = self.app.put("/api/point-records", data=put_data)
+        self.assertEqual(204, response.status_code)
+
+        response = self.app.get("/api/point-records")
+        response_data = json.loads(response.data)
+        expected = {
+            u'records': [
+                {
+                    u'event_name': "Bloob Time Event",
+                    u'point-category': u'Bloob Time',
+                    u'username': 'BillGates',
+                    u'points-earned': 2.0,
+                }
+            ]
+        }
+        self.assertEqual(expected, response_data)
+
+    def test_put_existing_point_record(self):
+        self.loginUser(user_id="200")
+        put_data = {
+            u'username': u"BillGates",
+            u'event_name': u"Bloob Time Event",
+            u'points-earned': 2.0,
+        }
+        response = self.app.put("/api/point-records", data=put_data)
+        self.assertEqual(204, response.status_code)
+
+        put_data = {
+            u'username': u"BillGates",
+            u'event_name': u"Bloob Time Event",
+            u'points-earned': 4.0,
+        }
+        response = self.app.put("/api/point-records", data=put_data)
+        self.assertEqual(204, response.status_code)
+
+        response = self.app.get("/api/point-records")
+        response_data = json.loads(response.data)
+        expected = {
+            u'records': [
+                {
+                    u'event_name': "Bloob Time Event",
+                    u'point-category': u'Bloob Time',
+                    u'username': 'BillGates',
+                    u'points-earned': 4.0,
+                }
+            ]
+        }
+        self.assertEqual(expected, response_data)
 
 
 if __name__ == '__main__':

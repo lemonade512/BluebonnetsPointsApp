@@ -225,6 +225,11 @@ class UserListAPI(Resource):
         user_data.user_permissions = ['user']
         user_data.put()
 
+        # TODO find a better way that doesn't require you to remember to add
+        # this line every single time you want to create a UserData object.
+        # Create the necessary point records
+        user_data.populate_records()
+
         response = jsonify()
         response.status_code = 201
         response.headers['location'] = '/api/users/' + str(user_data.user_id)
@@ -522,7 +527,7 @@ class EventListAPI(Resource):
         """
         category = request.args.get("category", "all")
         if category == 'all':
-            events = Event.query()
+            events = Event.query(ancestor=Event.root_key())
         else:
             category = PointCategory.get_from_name(category)
             if category is None:
@@ -534,7 +539,7 @@ class EventListAPI(Resource):
             keys.append(category.key)
             keys.extend(category.sub_categories)
 
-            events = Event.query(Event.point_category.IN(keys))
+            events = Event.query(Event.point_category.IN(keys), ancestor=Event.root_key())
 
         events = events.order(Event.date)
 
@@ -573,6 +578,9 @@ class EventListAPI(Resource):
         new_event.point_category = point_category.key
         new_event.put()
 
+        # Make sure there are point records for this event
+        new_event.populate_records()
+
         response = jsonify()
         response.status_code = 201
         response.headers['location'] = "/api/events/" + new_event.name.replace(" ", "")
@@ -610,6 +618,73 @@ class EventAPI(Resource):
         event.delete()
 
 
+class PointRecordAPI(Resource):
+
+    # TODO write tests for this method
+    def get(self):
+        event_name = request.args.get("event_name", "all")
+        username = request.args.get("username", "all")
+
+        records = PointRecord.query()
+        # TODO probably shouldn't make these special cases?
+        if event_name != "all":
+            records = records.filter(PointRecord.event_name == event_name)
+
+        if username != "all":
+            records = records.filter(PointRecord.username == username)
+
+        out = {'records': []}
+        for record in records:
+            event = Event.get_from_name(record.event_name)
+            if event is None:
+                raise Exception("PointRecord with invalid event name")
+
+            point_cat = event.point_category.get().name
+            out['records'].append({
+                'event_name': record.event_name,
+                'username': record.username,
+                'points-earned': record.points_earned,
+                'point-category': point_cat,
+            })
+
+        return jsonify(**out)
+
+    @require_permissions(['officer'], output_format='json')
+    def put(self):
+        data = request.form
+
+        user_data = UserData.get_from_username(data['username'])
+        if not user_data:
+            raise Exception("I don't know that person")
+
+        event = Event.get_from_name(data['event_name'])
+        if not event:
+            raise Exception("I don't know that event")
+
+        point_record = PointRecord.query(PointRecord.event_name == event.name,
+                                         PointRecord.username == user_data.username).get()
+        # TODO this might allow me to not create new records every time a
+        # new event or user is created because a record will be created when
+        # the client tries to modify a record that should exist
+        # Create a point record if one does not exist
+        if not point_record:
+            # TODO does this work with the user key as the ancestor?
+            point_record = PointRecord(parent=user_data.key)
+
+        point_record.event_name = event.name
+        point_record.username = user_data.username
+        point_record.points_earned = float(data['points-earned'])
+        point_record.put()
+
+        # TODO A put request (and really any other request that creates or
+        # updates an object) should return the new representation of that
+        # object so clients don't need to make more API calls
+
+        response = jsonify()
+        response.status_code = 204
+        return response
+
+
 api.add_resource(UserListAPI, '/api/users', endpoint='users')
 api.add_resource(UserAPI, '/api/users/<string:user_id>', endpoint='user')
 api.add_resource(ExceptionListAPI, '/api/users/<string:user_id>/point-exceptions')
@@ -620,6 +695,7 @@ api.add_resource(PointCategoryListAPI, '/api/point-categories')
 api.add_resource(PointCategoryAPI, '/api/point-categories/<string:name>')
 api.add_resource(EventListAPI, '/api/events')
 api.add_resource(EventAPI, '/api/events/<string:event>')
+api.add_resource(PointRecordAPI, '/api/point-records')
 
 
 # *************************************************************************** #

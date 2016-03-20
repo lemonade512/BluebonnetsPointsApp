@@ -105,6 +105,20 @@ class UserData(ndb.Model):
     # be "user" or "officer"
     user_permissions = ndb.StringProperty(repeated=True)
 
+    def populate_records(self):
+        # Create a PointRecord for every event with this user
+        events = Event.query()
+        for event in events:
+            if PointRecord.query(PointRecord.event_name == event.name,
+                                 PointRecord.username == self.username).get() is not None:
+                # There is already a record for this event and this user
+                continue
+
+            new_record = PointRecord()
+            new_record.username = self.username
+            new_record.event_name = event.name
+            new_record.put()
+
     @staticmethod
     def get_from_url_segment(url_segment):
         # TODO this flow is a bit weird. There is theoretically a problem if a
@@ -129,7 +143,8 @@ class UserData(ndb.Model):
 
     @property
     def point_records(self):
-        return PointRecord.query().filter(PointRecord.user_data == self.key)
+        #return PointRecord.query().filter(PointRecord.user_data == self.key)
+        return PointRecord.query(ancestory=self.key).filter(PointRecord.username == self.username)
 
     @staticmethod
     def get_current_user_data():
@@ -168,8 +183,12 @@ class UserData(ndb.Model):
 # allow you to have strong consistency without too much of a burden of 1 write
 # per second in an entity group.
 class PointRecord(ndb.Model):
-    user_data = ndb.KeyProperty(kind="UserData")
-    event = ndb.KeyProperty(kind="Event")
+    # TODO find a way to use keys instead of strings, but for now this should
+    # work just fine.
+    username = ndb.StringProperty()
+    event_name = ndb.StringProperty()
+    #user_data = ndb.KeyProperty(kind="UserData")
+    #event = ndb.KeyProperty(kind="Event")
 
     # NOTE: I believe we can just get the point category associated with the
     # event and not worry about keeping track of the PointCategory for a
@@ -187,6 +206,20 @@ class Event(ndb.Model):
     point_category = ndb.KeyProperty(kind="PointCategory")
     # TODO should I add an archived property?
 
+    def populate_records(self):
+        # Create point records for all users for this event
+        users = UserData.query()
+        for user in users:
+            if PointRecord.query(PointRecord.event_name == self.name,
+                                 PointRecord.username == user.username).get() is not None:
+                # There is already a record for this event and this user
+                continue
+
+            new_record = PointRecord()
+            new_record.username = user.username
+            new_record.event_name = self.name
+            new_record.put()
+
     def delete(self):
         """ Deletes self from the DataStore.
 
@@ -198,7 +231,7 @@ class Event(ndb.Model):
 
         # TODO test the deletion of PointRecords
         # Delete all PointRecords associated with this event
-        q = PointRecord.query(PointRecord.event == self.key)
+        q = PointRecord.query(PointRecord.event_name == self.name)
         for r in q:
             r.key.delete()
 
@@ -207,7 +240,8 @@ class Event(ndb.Model):
 
     @property
     def point_records(self):
-        return PointRecord.query().filter(PointRecord.event == self.key)
+        #return PointRecord.query().filter(PointRecord.event == self.key)
+        return PointRecord.query().filter(PointRecord.event_name == self.name)
 
     @staticmethod
     def root_key():
