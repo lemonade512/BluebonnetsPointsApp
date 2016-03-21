@@ -11,6 +11,9 @@ class PointCategory(ndb.Model):
     # A list of the sub-categories for this point type
     sub_categories = ndb.KeyProperty(kind="PointCategory", repeated=True)
 
+    member_requirement = ndb.IntegerProperty()
+    baby_requirement = ndb.IntegerProperty()
+
     @staticmethod
     def root_key():
         """ Creates a root key for all point categories. """
@@ -37,20 +40,6 @@ class PointCategory(ndb.Model):
                 return p
 
         return None
-
-# TODO do we actually need this class? Couldn't we just have the PointCategory
-# keep track of its default requirements?
-# NOTE: We probably do need this class (or something like it) to handle the
-# case where babies have different requirements than full members.
-class PointRequirement(ndb.Model):
-    """ A global requirement for the number of points needed for a point type
-
-    There should only ever be one of these for each point type. If someone
-    tries adding a point requirement with a type that already has a point
-    requirement it should cause an error.
-    """
-    point_category = ndb.StringProperty()
-    points_needed = ndb.IntegerProperty(indexed=False)
 
 
 class PointException(ndb.Model):
