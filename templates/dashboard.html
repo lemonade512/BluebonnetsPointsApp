@@ -2,6 +2,21 @@
 {% block title %}Members{% endblock %}
 {% block javascript %}
 <script>
+var get_events = function() {
+    $.get("/api/events", function(data) {
+        $(".events-table").empty();
+        $.each(data.events, function(i, event) {
+            $(".events-table").append(
+                '<tr>' +
+                '<td>' + event.name + '</td>' +
+                '<td align="center">' + event.date + '</td>' +
+                '<td align="center">' + event['point-category'] + '</td>' +
+                '</tr>'
+            );
+        });
+    });
+};
+
 $(
     function() {
         // Function that toggles child levels
@@ -24,6 +39,11 @@ $(
         });
     }
 );
+
+
+$(document).ready(function() {
+    get_events();
+});
 </script>
 {% endblock %}
 {% block content %}
@@ -204,6 +224,7 @@ $(
 
     <h1> Upcoming Events </h1>
     <table class="events-table">
+        <!--
         <tr>
             <td>10/25/15</td>
             <td>Monthly Meeting</td>
@@ -212,5 +233,6 @@ $(
             <td>11/17/15</td>
             <td>Fall Formal</td>
         </tr>
+        -->
     </table>
 {% endblock %}
