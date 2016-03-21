@@ -15,6 +15,11 @@ indexes:
   properties:
   - name: date
 
+- kind: PointRecord
+  properties:
+  - name: event_name
+  - name: username
+
 - kind: UserData
   properties:
   - name: active

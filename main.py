@@ -133,14 +133,21 @@ def point_categories():
     return render_jinja_template('point-categories.html', template_values)
 
 @app.route('/events')
+@require_permissions(['officer'])
 def event_list():
     template_values = {
         'active_page': 'events',
     }
     return render_jinja_template('events.html', template_values)
 
-#app.route('/events/<event>')
-#def event(event):
+# TODO handle the case when the event does not exist
+@app.route('/events/<event>')
+def event(event):
+    event = Event.get_from_name(event)
+    template_values = {
+        'target_event': event,
+    }
+    return render_jinja_template('event.html', template_values)
 
 # **************************************************************************** #
 #                              Error Handlers                                  #
@@ -570,7 +577,7 @@ class EventListAPI(Resource):
         for event in events:
             out['events'].append({
                 "name": event.name,
-                "date": event.date,
+                "date": event.date.strftime('%m/%d/%Y'),
                 "point-category": event.point_category.get().name,
             })
 
@@ -580,8 +587,6 @@ class EventListAPI(Resource):
     def post(self):
         """ Creates a new event. """
         data = request.form
-        new_category = None
-        new_key = None
 
         # Don't allow duplicate events
         event = Event.get_from_name(data['name'])
@@ -623,7 +628,7 @@ class EventAPI(Resource):
 
         out = {
             u'name': event.name,
-            u'date': event.date,
+            u'date': event.date.strftime('%m/%d/%Y'),
             u'point-category': event.point_category.get().name,
         }
         return jsonify(**out)
@@ -639,6 +644,45 @@ class EventAPI(Resource):
             return response
 
         event.delete()
+
+    def put(self, event):
+        data = request.form
+
+        new_event_name = data['name']
+        dup_event = Event.get_from_name(new_event_name)
+        # Don't allow duplicate events
+        if dup_event is not None and new_event_name.replace(" ", "") != event.replace(" ", ""):
+            response = jsonify(message="Duplicate resource")
+            response.status_code = 409
+            return response
+
+        event = Event.get_from_name(event)
+        if event is None:
+            # TODO this code is duplicated, maybe make some sort of default
+            # handler that can be called for any resource that doesn't exist?
+            response = jsonify(message="Resource does not exist")
+            response.status_code = 404
+            return response
+
+        # Get the point category by name
+        point_category = PointCategory.get_from_name(data['point-category'])
+        if point_category is None:
+            raise Exception("Unknonwn point category: " + data['point-category'])
+
+        records = PointRecord.query(PointRecord.event_name == event.name)
+        for record in records:
+            record.event_name = data['name']
+            record.put()
+
+        event.name = data['name']
+        event.date = datetime.strptime(data['date'], "%Y-%m-%d")
+        event.point_category = point_category.key
+        event.put()
+
+        response = jsonify()
+        response.status_code = 201
+        response.headers['location'] = "/api/events/" + event.name.replace(" ", "")
+        return response
 
 
 class PointRecordAPI(Resource):
@@ -656,11 +700,15 @@ class PointRecordAPI(Resource):
         if username != "all":
             records = records.filter(PointRecord.username == username)
 
+        records = records.order(PointRecord.username)
+
         out = {'records': []}
         for record in records:
             event = Event.get_from_name(record.event_name)
             if event is None:
-                raise Exception("PointRecord with invalid event name")
+                logging.error("Tried to get a point record with an invalid event name: " + record.event_name)
+                record.key.delete()
+                continue
 
             point_cat = event.point_category.get().name
             out['records'].append({
