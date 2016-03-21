@@ -10,8 +10,13 @@ get_point_categories = function() {
 
         $.each(data, function(key, value) {
             // Add as an option for the select element
-            option = $('<option value="' + key + '">' + key + "</option>");
-            $('#point-categories').append(option);
+            opt_group = $('<optgroup label="' + key + '"></opt-group>');
+            $.each(value, function(index, sub_cat) {
+                option = $('<option value="' + sub_cat + '">' + sub_cat + "</option>");
+                opt_group.append(option);
+            });
+            console.log(opt_group);
+            $('#point-categories').append(opt_group);
         });
     });
 }
