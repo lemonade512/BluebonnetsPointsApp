@@ -98,7 +98,7 @@ $(function () {
         event.preventDefault();
     });
 
-    get_point_exceptions()
+    get_point_exceptions();
 });
 </script>
 {% endblock %}
@@ -148,7 +148,7 @@ $(function () {
     <h2>Point Reductions</h2>
 
     <form id="add-exception" method="post" action="/api/users/{{target_user.user_id}}/point-exceptions" class="pure-form pure-form-aligned centered-form">
-        <div id="point-exceptions" style=></div>
+        <div id="point-exceptions"></div>
         <div class="pure-control-group">
             <label for="type">Point Type</label>
             <input type="text" id="type" name="type" />
