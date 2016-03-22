@@ -76,6 +76,10 @@ $(function () {
             data: data,
             success: function() {
                 $('#outcome').html('<span style="color: green">Successfully saved!</span>');
+                if (data['fname'] !== "{{target_user.fname}}" || data['lname'] !== "{{target_user.lname}}" ) {
+                    console.log("Redirecting to proper URL");
+                    window.location.replace("/profile/{{target_user.user_id}}");
+                }
             }
         }).fail(function(resp) {
             // TODO This should be more user friendly
