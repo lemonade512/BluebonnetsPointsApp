@@ -11,8 +11,8 @@ get_point_categories = function() {
         $.each(data, function(key, value) {
             // Add as an option for the select element
             opt_group = $('<optgroup label="' + key + '"></opt-group>');
-            $.each(value, function(index, sub_cat) {
-                option = $('<option value="' + sub_cat + '">' + sub_cat + "</option>");
+            $.each(value['sub_categories'], function(index, sub_cat) {
+                option = $('<option value="' + sub_cat['name'] + '">' + sub_cat['name'] + "</option>");
                 opt_group.append(option);
             });
             console.log(opt_group);
@@ -33,7 +33,7 @@ var get_events = function() {
             $("#events").append(
                 '<tr>' +
                 '<td>' + (i+1) + '</td>' +
-                '<td><a href="/events/' + event.name + '">' + event.name + '</a>' + '</td>' +
+                '<td><a href="/events/' + encodeURIComponent(event.name) + '">' + event.name + '</a>' + '</td>' +
                 '<td align="center">' + event.date + '</td>' +
                 '<td align="center">' + event['point-category'] + '</td>' +
                 '</tr>'
@@ -92,7 +92,7 @@ $(document).ready(function() {
         <!-- TODO validate input -->
         <div class="pure-control-group">
             <label>Date</label>
-            <input type="text" name="date" />
+            <input type="text" name="date" placeholder="YYYY-MM-DD"/>
         </div>
 
         <div class="pure-controls">

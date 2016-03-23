@@ -114,3 +114,31 @@ select {
     }
 }
 
+#point-categories-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 8px;
+}
+
+#point-categories-table th {
+    background: #333;
+    color: white;
+    padding: 6px;
+}
+
+#point-categories-table td {
+    padding: 6px;
+}
+
+#point-categories-table .l1 {
+    font-weight: bold;
+}
+
+#point-categories-table .l2 td:first-of-type {
+    padding-left: 20px;
+}
+
+#point-categories-table tr:nth-of-type(odd) {
+    background: white;
+}
+

@@ -1,5 +1,6 @@
 from google.appengine.ext import ndb
 from google.appengine.api import users
+import urlparse
 
 DEFAULT_ROOT_KEY = "default_root_key"
 
@@ -244,8 +245,10 @@ class Event(ndb.Model):
         """ Gets an event matching the given name.
 
         The spaces in `name` are ignored in order to make urls look nicer
-        without any spaces.
+        without any spaces. Additionally, any url encoded characters are
+        replaced with the proper characters (ex. %2F -> /)
         """
+        name = urlparse.unquote(name)
         q = Event.query(ancestor=Event.root_key())
         for e in q:
             if e.name.replace(" ", "") == name.replace(" ", ""):

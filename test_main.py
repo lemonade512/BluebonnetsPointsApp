@@ -980,12 +980,30 @@ class PointCategoriesAPITestCase(unittest.TestCase):
 
         data = json.loads(response.data)
         expected = {
-            u'Sisterhood': [
-                u"Bloob Time",
-                u"Mixers",
-            ],
+            u'Sisterhood': {
+                u'name': u'Sisterhood',
+                u'baby_requirement': None,
+                u'member_requirement': None,
+                u'sub_categories': [
+                    {
+                        u'name': u'Bloob Time',
+                        u'baby_requirement': None,
+                        u'member_requirement': None,
+                    },
+                    {
+                        u'name': u'Mixers',
+                        u'baby_requirement': None,
+                        u'member_requirement': None,
+                    }
+                ]
+            },
 
-            u'Philanthropy': []
+            u'Philanthropy': {
+                u'name': u'Philanthropy',
+                u'baby_requirement': None,
+                u'member_requirement': None,
+                u'sub_categories': [],
+            }
         }
         self.assertEqual(expected, data)
 
@@ -1011,9 +1029,37 @@ class PointCategoriesAPITestCase(unittest.TestCase):
         response = self.app.get("/api/point-categories")
         response_data = json.loads(response.data)
         expected = {
-            u'Academics': [],
-            u'Sisterhood': [u"Bloob Time", u"Mixers"],
-            u'Philanthropy': [],
+            u'Academics': {
+                u'name': u'Academics',
+                u'baby_requirement': None,
+                u'member_requirement': None,
+                u'sub_categories': [],
+            },
+
+            u'Sisterhood': {
+                u'name': u'Sisterhood',
+                u'baby_requirement': None,
+                u'member_requirement': None,
+                u'sub_categories': [
+                    {
+                        u'name': u'Bloob Time',
+                        u'baby_requirement': None,
+                        u'member_requirement': None,
+                    },
+                    {
+                        u'name': u'Mixers',
+                        u'baby_requirement': None,
+                        u'member_requirement': None,
+                    }
+                ]
+            },
+
+            u'Philanthropy': {
+                u'name': u'Philanthropy',
+                u'baby_requirement': None,
+                u'member_requirement': None,
+                u'sub_categories': [],
+            }
         }
         self.assertEqual(expected, response_data)
 
@@ -1031,8 +1077,36 @@ class PointCategoriesAPITestCase(unittest.TestCase):
         response = self.app.get("/api/point-categories")
         response_data = json.loads(response.data)
         expected = {
-            u'Sisterhood': [u"Bloob Time", u"Mixers"],
-            u'Philanthropy': [u"Academics"],
+            u'Sisterhood': {
+                u'name': u'Sisterhood',
+                u'baby_requirement': None,
+                u'member_requirement': None,
+                u'sub_categories': [
+                    {
+                        u'name': u'Bloob Time',
+                        u'baby_requirement': None,
+                        u'member_requirement': None,
+                    },
+                    {
+                        u'name': u'Mixers',
+                        u'baby_requirement': None,
+                        u'member_requirement': None,
+                    }
+                ]
+            },
+
+            u'Philanthropy': {
+                u'name': u'Philanthropy',
+                u'baby_requirement': None,
+                u'member_requirement': None,
+                u'sub_categories': [
+                    {
+                        u'name': u'Academics',
+                        u'baby_requirement': None,
+                        u'member_requirement': None,
+                    },
+                ],
+            }
         }
         self.assertEqual(expected, response_data)
 
@@ -1059,8 +1133,30 @@ class PointCategoriesAPITestCase(unittest.TestCase):
         response = self.app.get("/api/point-categories")
         response_data = json.loads(response.data)
         expected = {
-            u'Sisterhood': [u"Bloob Time", u"Mixers"],
-            u'Philanthropy': [],
+            u'Sisterhood': {
+                u'name': u'Sisterhood',
+                u'baby_requirement': None,
+                u'member_requirement': None,
+                u'sub_categories': [
+                    {
+                        u'name': u'Bloob Time',
+                        u'baby_requirement': None,
+                        u'member_requirement': None,
+                    },
+                    {
+                        u'name': u'Mixers',
+                        u'baby_requirement': None,
+                        u'member_requirement': None,
+                    }
+                ]
+            },
+
+            u'Philanthropy': {
+                u'name': u'Philanthropy',
+                u'baby_requirement': None,
+                u'member_requirement': None,
+                u'sub_categories': [],
+            }
         }
         self.assertEqual(expected, response_data)
 
@@ -1078,9 +1174,32 @@ class PointCategoriesAPITestCase(unittest.TestCase):
         response = self.app.get("/api/point-categories")
         response_data = json.loads(response.data)
         expected = {
-            u'Bloob Time': [],
-            u'Sisterhood': [u"Mixers"],
-            u'Philanthropy': [],
+            u'Sisterhood': {
+                u'name': u'Sisterhood',
+                u'baby_requirement': None,
+                u'member_requirement': None,
+                u'sub_categories': [
+                    {
+                        u'name': u'Mixers',
+                        u'baby_requirement': None,
+                        u'member_requirement': None,
+                    }
+                ]
+            },
+
+            u'Bloob Time': {
+                u'baby_requirement': None,
+                u'member_requirement': None,
+                u'name': u'Bloob Time',
+                u'sub_categories': [],
+            },
+
+            u'Philanthropy': {
+                u'name': u'Philanthropy',
+                u'baby_requirement': None,
+                u'member_requirement': None,
+                u'sub_categories': [],
+            }
         }
         self.assertEqual(expected, response_data)
 
@@ -1198,17 +1317,17 @@ class EventAPITestCase(unittest.TestCase):
         expected = {
             u'events': [
                 {
-                    u'date': u"Tue, 02 Aug 2016 00:00:00 GMT",
+                    u'date': u"08/02/2016",
                     u'point-category': u"Sisterhood",
                     u'name': u"Sisterhood Event",
                 },
                 {
-                    u'date': u"Wed, 03 Aug 2016 00:00:00 GMT",
+                    u'date': u"08/03/2016",
                     u'point-category': u"Philanthropy",
                     u'name': u"My First Event",
                 },
                 {
-                    u'date': u"Thu, 01 Sep 2016 00:00:00 GMT",
+                    u'date': u"09/01/2016",
                     u'point-category': u"Bloob Time",
                     u'name': u"Bloob Time Event",
                 },
@@ -1225,12 +1344,12 @@ class EventAPITestCase(unittest.TestCase):
         expected = {
             u'events': [
                 {
-                    u'date': u"Tue, 02 Aug 2016 00:00:00 GMT",
+                    u'date': u"08/02/2016",
                     u'point-category': u"Sisterhood",
                     u'name': u"Sisterhood Event",
                 },
                 {
-                    u'date': u"Thu, 01 Sep 2016 00:00:00 GMT",
+                    u'date': u"09/01/2016",
                     u'point-category': u"Bloob Time",
                     u'name': u"Bloob Time Event",
                 },
@@ -1247,7 +1366,7 @@ class EventAPITestCase(unittest.TestCase):
         expected = {
             u'events': [
                 {
-                    u'date': u"Thu, 01 Sep 2016 00:00:00 GMT",
+                    u'date': u"09/01/2016",
                     u'point-category': u"Bloob Time",
                     u'name': u"Bloob Time Event",
                 },
@@ -1262,7 +1381,7 @@ class EventAPITestCase(unittest.TestCase):
 
         data = json.loads(response.data)
         expected = {
-            u'date': u"Thu, 01 Sep 2016 00:00:00 GMT",
+            u'date': u"09/01/2016",
             u'point-category': u"Bloob Time",
             u'name': u"Bloob Time Event",
         }
@@ -1275,7 +1394,7 @@ class EventAPITestCase(unittest.TestCase):
 
         data = json.loads(response.data)
         expected = {
-            u'date': u"Thu, 01 Sep 2016 00:00:00 GMT",
+            u'date': u"09/01/2016",
             u'point-category': u"Bloob Time",
             u'name': u"Bloob Time Event",
         }
@@ -1313,22 +1432,22 @@ class EventAPITestCase(unittest.TestCase):
         expected = {
             u'events': [
                 {
-                    u'date': u'Tue, 01 Mar 2016 00:00:00 GMT',
+                    u'date': u'03/01/2016',
                     u'name': u'Spring Fling 2016',
                     u'point-category': u'Bloob Time'
                 },
                 {
-                    u'date': u'Tue, 02 Aug 2016 00:00:00 GMT',
+                    u'date': u'08/02/2016',
                     u'name': u'Sisterhood Event',
                     u'point-category': u'Sisterhood'
                 },
                 {
-                    u'date': u'Wed, 03 Aug 2016 00:00:00 GMT',
+                    u'date': u'08/03/2016',
                     u'name': u'My First Event',
                     u'point-category': u'Philanthropy'
                 },
                 {
-                    u'date': u'Thu, 01 Sep 2016 00:00:00 GMT',
+                    u'date': u'09/01/2016',
                     u'name': u'Bloob Time Event',
                     u'point-category': u'Bloob Time'
                 }
@@ -1372,12 +1491,12 @@ class EventAPITestCase(unittest.TestCase):
         expected = {
             u'events': [
                 {
-                    u'date': u'Tue, 02 Aug 2016 00:00:00 GMT',
+                    u'date': u'08/02/2016',
                     u'name': u'Sisterhood Event',
                     u'point-category': u'Sisterhood'
                 },
                 {
-                    u'date': u'Wed, 03 Aug 2016 00:00:00 GMT',
+                    u'date': u'08/03/2016',
                     u'name': u'My First Event',
                     u'point-category': u'Philanthropy'
                 }

@@ -2,33 +2,171 @@
 {% block title %}Members{% endblock %}
 {% block javascript %}
 <script>
+save_point_category = function(name, data) {
+    $.ajax({
+        url: '/api/point-categories/' + name,
+        type: 'PATCH',
+        data: data,
+        success: function() {
+            // TODO I probably shouldn't bother the user in this case
+            $('#outcome').html('<span style="color: green">Successfully saved!</span>');
+        }
+    }).fail(function(resp) {
+        // TODO This should be more user friendly
+        $('#outcome').html('<span style="color: red">There was a problem!</span>');
+    });
+}
+
+remove_point_category = function(name) {
+    $.ajax({
+        url: '/api/point-categories/' + name,
+        type: 'DELETE',
+        success: function() {
+            $('#outcome').html('<span style="color: green">Successfully deleted!</span>');
+            get_point_categories();
+        }
+    }).fail(function(data) {
+        if (data.status === 403) {
+            $('#outcome').html('<span style="color: red">' +
+                    data.responseJSON['message'] +
+                    '</span>');
+        }
+        else {
+            $('#outcome').html('<span style="color: red">There was a problem!</span>');
+        }
+        // TODO This should be more user friendly
+    });
+}
+
 get_point_categories = function() {
-    console.log("Getting point categories!");
     $.ajax({
         url: "/api/point-categories",
     }).success(function(data) {
-        $('#point-categories').empty();
+        $('#point-categories-table').empty();
         $('#parent-categories').empty();
 
         // Add a none option for parent categories
         $('#parent-categories').append($('<option value="none">None</option>'));
 
+        // Add table header
+        table = $('#point-categories-table');
+        thead = $('<thead></thead>');
+        thead.append($('<tr><th>Category</th><th>Baby Requirement</th><th>Member Requirement</th><th>Delete</th></tr>'));
+        table.append(thead);
+
+        // Add table body
+        tbody = $('<tbody></tbody>');
         $.each(data, function(key, value) {
-            // Add to the Point Categories display
-            li = $('<li>' + key + '</li>');
-            $('#point-categories').append(li);
-            if (value.length > 0) {
-                ul = $('<ul></ul>');
-                $.each(value, function(index, sub_cat) {
-                    ul.append($('<li>' + sub_cat + '</li>'));
-                });
-                $('#point-categories').append(ul);
+            tr = $('<tr class="l1"></tr>');
+            tr.append($('<td>' + key + '</td>'));
+
+            baby_requirement = parseFloat(value['baby_requirement']);
+            if (isNaN(baby_requirement)) {
+                baby_requirement = 0;
             }
+            baby_requirement_td = $('<td align="center"></td>');
+            baby_input = $('<input type="text" value="' + baby_requirement + '"></input>').keyup(function() {
+                new_value = parseInt($(this).val());
+                if(isNaN(new_value))
+                    return
+
+                data = {
+                    'baby_requirement': new_value,
+                }
+                save_point_category(key, data);
+            });
+            baby_requirement_td.append(baby_input);
+            tr.append(baby_requirement_td);
+
+            member_requirement = parseFloat(value['member_requirement']);
+            if (isNaN(member_requirement)) {
+                member_requirement = 0;
+            }
+            member_requirement_td = $('<td align="center"></td>');
+            baby_input = $('<input type="text" value="' + member_requirement + '"></input>').keyup(function() {
+                new_value = parseInt($(this).val());
+                if(isNaN(new_value))
+                    return
+
+                data = {
+                    'member_requirement': new_value,
+                }
+                save_point_category(key, data);
+            });
+            member_requirement_td.append(baby_input);
+            tr.append(member_requirement_td);
+
+            icon = $("<i class='fa fa-trash' />");
+            td = $("<td align='center'></td>");
+            btn = $("<button type='button' class='pure-button rounded' />").click(function() {
+                remove_point_category(key);
+            });
+            btn.append(icon);
+            td.append(btn);
+            tr.append(td)
+
+            tbody.append(tr);
+
+            $.each(value['sub_categories'], function(index, sub_cat) {
+                tr = $('<tr class="l2"></tr>');
+                tr.append($('<td>' + sub_cat['name'] + '</td>'));
+
+                // TODO placeholder
+                baby_requirement = parseFloat(sub_cat['baby_requirement']);
+                if (isNaN(baby_requirement)) {
+                    baby_requirement = 0;
+                }
+                baby_requirement_td = $('<td align="center"></td>');
+                baby_input = $('<input type="text" value="' + baby_requirement + '"></input>').keyup(function() {
+                    new_value = parseInt($(this).val());
+                    if(isNaN(new_value))
+                        return
+
+                    data = {
+                        'baby_requirement': new_value,
+                    }
+                    save_point_category(sub_cat['name'], data);
+                });
+                baby_requirement_td.append(baby_input);
+                tr.append(baby_requirement_td);
+
+                member_requirement = parseFloat(sub_cat['member_requirement']);
+                if (isNaN(member_requirement)) {
+                    member_requirement = 0;
+                }
+                member_requirement_td = $('<td align="center"></td>');
+                baby_input = $('<input type="text" value="' + member_requirement + '"></input>').keyup(function() {
+                    new_value = parseInt($(this).val());
+                    if(isNaN(new_value))
+                        return
+
+                    data = {
+                        'member_requirement': new_value,
+                    }
+                    save_point_category(sub_cat['name'], data);
+                });
+                member_requirement_td.append(baby_input);
+                tr.append(member_requirement_td);
+
+                icon = $("<i class='fa fa-trash' />");
+                td = $("<td align='center'></td>");
+                btn = $("<button type='button' class='pure-button rounded' />").click(function() {
+                    remove_point_category(sub_cat['name']);
+                });
+                btn.append(icon);
+                td.append(btn);
+                tr.append(td);
+
+                tbody.append(tr);
+            });
+
 
             // Add as an option for the select element
             option = $('<option value="' + key + '">' + key + "</option>");
             $('#parent-categories').append(option);
         });
+
+        table.append(tbody);
     });
 }
 
@@ -60,7 +198,7 @@ $(function() {
 {% endblock %}
 {% block content %}
     <h1> Point Categories </h1>
-    <ul id='point-categories'></ul>
+    <table id='point-categories-table'></table>
 
     <h1> Create a New Category </h1>
     <form id="category-form" method="post" action="/api/point-categories" class="pure-form pure-form-aligned">

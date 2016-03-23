@@ -458,7 +458,12 @@ class PointCategoryListAPI(Resource):
         out = {}
         for p in point_categories:
             if p.parent is None:
-                out[p.name] = []
+                out[p.name] = {
+                    "name": p.name,
+                    "baby_requirement": p.baby_requirement,
+                    "member_requirement": p.member_requirement,
+                    "sub_categories": [],
+                }
                 invalid_keys = []
                 for key in p.sub_categories:
                     sub = key.get()
@@ -467,7 +472,12 @@ class PointCategoryListAPI(Resource):
                     if sub is None:
                         invalid_keys.append(key)
                     else:
-                        out[p.name].append(sub.name)
+                        sub_cat = {
+                            "name": sub.name,
+                            "baby_requirement": sub.baby_requirement,
+                            "member_requirement": sub.member_requirement,
+                        }
+                        out[p.name]['sub_categories'].append(sub_cat)
 
                 for key in invalid_keys:
                     p.sub_categories.remove(key)
@@ -543,6 +553,36 @@ class PointCategoryAPI(Resource):
             "name": category.name,
         }
         return jsonify(**data)
+
+    def delete(self, name):
+        category = PointCategory.get_from_name(name)
+        if category is None:
+            response = jsonify(message="Resource does not exist")
+            response.status_code = 404
+            return response
+
+        category.key.delete();
+
+    def patch(self, name):
+        data = request.form
+        baby_requirement = data.get('baby_requirement', None)
+        member_requirement = data.get('member_requirement', None)
+
+        category = PointCategory.get_from_name(name)
+        if baby_requirement is not None:
+            category.baby_requirement = int(baby_requirement)
+
+        if member_requirement is not None:
+            category.member_requirement = int(member_requirement)
+        category.put()
+
+        # TODO A put request (and really any other request that creates or
+        # updates an object) should return the new representation of that
+        # object so clients don't need to make more API calls
+
+        response = jsonify()
+        response.status_code = 204
+        return response
 
 
 class EventListAPI(Resource):
