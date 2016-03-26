@@ -2,25 +2,6 @@
 {% block title %}Events{% endblock %}
 {% block javascript %}
 <script>
-get_point_categories = function() {
-    $.ajax({
-        url: "/api/point-categories",
-    }).success(function(data) {
-        $('#point-categories').empty();
-
-        $.each(data, function(key, value) {
-            // Add as an option for the select element
-            opt_group = $('<optgroup label="' + key + '"></opt-group>');
-            $.each(value['sub_categories'], function(index, sub_cat) {
-                option = $('<option value="' + sub_cat['name'] + '">' + sub_cat['name'] + "</option>");
-                opt_group.append(option);
-            });
-            console.log(opt_group);
-            $('#point-categories').append(opt_group);
-        });
-    });
-}
-
 var get_events = function() {
     $.get("/api/events", function(data) {
         $("#events").empty();
@@ -65,7 +46,9 @@ $(document).ready(function() {
         event.preventDefault();
     });
 
-    get_point_categories();
+    PointCategories.init();
+    PointCategorySelectView.init('#point-categories', "");
+    PointCategories.get_point_categories(PointCategorySelectView.render);
     get_events();
 });
 

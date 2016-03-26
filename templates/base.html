@@ -14,7 +14,14 @@
 
         {% endblock %}
 
-        {% block javascript %}{% endblock %}
+        {% block global_javascript %}
+        <script src="/javascript/util.js"></script>
+        <script src="/javascript/api.js"></script>
+        <script src="/javascript/views.js"></script>
+        {% endblock %}
+
+        {% block javascript %}
+        {% endblock %}
     </head>
     <body>
         <div id="wrapper">

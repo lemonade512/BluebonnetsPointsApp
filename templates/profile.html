@@ -102,6 +102,9 @@ $(function () {
         event.preventDefault();
     });
 
+    PointCategories.init();
+    PointCategorySelectView.init('#point-categories', "");
+    PointCategories.get_point_categories(PointCategorySelectView.render);
     get_point_exceptions();
 });
 </script>
@@ -154,8 +157,8 @@ $(function () {
     <form id="add-exception" method="post" action="/api/users/{{target_user.user_id}}/point-exceptions" class="pure-form pure-form-aligned centered-form">
         <div id="point-exceptions"></div>
         <div class="pure-control-group">
-            <label for="type">Point Type</label>
-            <input type="text" id="type" name="type" />
+            <label for="type">Point Category</label>
+            <select id="point-categories" name="categories"></select>
         </div>
 
         <div class="pure-control-group">

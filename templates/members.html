@@ -2,44 +2,33 @@
 {% block title %}Members{% endblock %}
 {% block javascript %}
 <script>
-var caps = function(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
-var get_users = function(filter) {
-    status_map = {true: 'Active', false: 'Inactive'};
-
-    var params = {
-        filter: filter
-    };
-    var params_str = $.param(params);
-    $.get("/api/users?" + params_str, function(data) {
-        $("#users").empty();
+UserList.init();
+var add_users = function(data) {
+    $("#users").empty();
+    $("#users").append(
+        '<thead>' +
+        '<th>#</th><th>Name</th><th>Status</th><th>Classification</th><th>Graduating</th>' +
+        '</thead>'
+    )
+    $.each(data.users, function(i, user) {
         $("#users").append(
-            '<thead>' +
-            '<th>#</th><th>Name</th><th>Status</th><th>Classification</th><th>Graduating</th>' +
-            '</thead>'
-        )
-        $.each(data.users, function(i, user) {
-            $("#users").append(
-                '<tr>' +
-                '<td>' + (i+1) + '</td>' +
-                '<td><a href="/profile/' + user.user_id + '">' + user.fname + ' ' + user.lname + '</a>' + '</td>' +
-                '<td align="center">' + status_map[user.active] + '</td>' +
-                '<td align="center">' + caps(user.classification) + '</td>' +
-                '<td align="center">' + caps(user.grad_semester) + ' ' + user.grad_year + '</td>' +
-                '</tr>'
-            );
-        });
+            '<tr>' +
+            '<td>' + (i+1) + '</td>' +
+            '<td><a href="/profile/' + user.user_id + '">' + user.fname + ' ' + user.lname + '</a>' + '</td>' +
+            '<td align="center">' + status_map[user.active] + '</td>' +
+            '<td align="center">' + caps(user.classification) + '</td>' +
+            '<td align="center">' + caps(user.grad_semester) + ' ' + user.grad_year + '</td>' +
+            '</tr>'
+        );
     });
 };
 
 $(document).ready(function() {
     var default_selection = document.querySelector("#filter option[selected]").value;
-    get_users(default_selection);
+    UserList.get_users(default_selection, add_users);
 
     $('#filter').change(function(e) {
-        get_users(this.value);
+        UserList.get_users(this.value, add_users);
     });
 });
 
