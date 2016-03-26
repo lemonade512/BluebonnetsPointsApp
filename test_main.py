@@ -33,7 +33,7 @@ def setup_datastore():
 
     # Point Exceptions
     meetings_exception = PointException()
-    meetings_exception.point_category = "meetings"
+    meetings_exception.point_category = "Mixers"
     meetings_exception.points_needed = 5
 
     # Users
@@ -60,6 +60,7 @@ def setup_datastore():
     u.classification = "senior"
     u.graduation_year = 2015
     u.graduation_semester = "fall"
+    u.point_exceptions = []
     u.put()
 
     u = UserData(id='200')
@@ -94,6 +95,8 @@ def setup_datastore():
     e.date = datetime.datetime(2016,9,1)
     e.point_category = bloob_time_key
     e.put()
+
+    # Point Records
 
 # TODO rename _testbed to something else
 def setup_testbed():
@@ -420,7 +423,7 @@ class UsersAPITestCase(unittest.TestCase):
             u'lname': u"Gates",
             u'point_exceptions': [
                 {
-                    u'point_category': u'meetings',
+                    u'point_category': u"Mixers",
                     u'points_needed': 5
                 }
             ],
@@ -450,7 +453,7 @@ class UsersAPITestCase(unittest.TestCase):
             u'lname': u"Gates",
             u'point_exceptions': [
                 {
-                    u'point_category': u'meetings',
+                    u'point_category': u"Mixers",
                     u'points_needed': 5
                 }
             ],
@@ -480,7 +483,7 @@ class UsersAPITestCase(unittest.TestCase):
         put_data[u'user_id'] = "100"
         put_data[u'point_exceptions'] = [
             {
-                u'point_category': u'meetings',
+                u'point_category': u"Mixers",
                 u'points_needed': 5
             }
         ]
@@ -508,7 +511,7 @@ class UsersAPITestCase(unittest.TestCase):
         put_data[u'user_id'] = u"100"
         put_data[u'point_exceptions'] = [
             {
-                u'point_category': u'meetings',
+                u'point_category': u"Mixers",
                 u'points_needed': 5
             }
         ]
@@ -574,7 +577,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
         data = json.loads(response.data)
         expected = {
-            'point_category': "meetings",
+            'point_category': "Mixers",
             'points_needed': 5,
         }
         self.assertEqual(expected, data)
@@ -594,7 +597,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
         data = json.loads(response.data)
         expected = {
-            'point_category': "meetings",
+            'point_category': "Mixers",
             'points_needed': 5,
         }
         self.assertEqual(expected, data)
@@ -654,7 +657,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
         expected = {
             u'point_exceptions': [
                 {
-                    u'point_category': u"meetings",
+                    u'point_category': u"Mixers",
                     u'points_needed': 5,
                 },
             ]
@@ -670,7 +673,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
         expected = {
             u'point_exceptions': [
                 {
-                    u'point_category': u"meetings",
+                    u'point_category': u"Mixers",
                     u'points_needed': 5,
                 }
             ]
@@ -737,7 +740,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
             u'points_needed': 10,
         }
         response = self.app.post("/api/users/100/point-exceptions", data=post_data)
-        post_data['point_category'] = u"meetings"
+        post_data['point_category'] = u"Mixers"
         response = self.app.post("/api/users/100/point-exceptions", data=post_data)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.headers['location'],
