@@ -10,53 +10,130 @@ from google.appengine.ext import testbed
 import main
 from models import UserData, PointException, PointCategory, Event
 
+
+def setup_datastore():
+    """ Sets up the testing datastore to test with dummy data. """
+    # Point Categories
+    bloob_time = PointCategory(parent=PointCategory.root_key())
+    bloob_time.name = "Bloob Time"
+    bloob_time_key = bloob_time.put()
+
+    mixers = PointCategory(parent=PointCategory.root_key())
+    mixers.name = "Mixers"
+    mixers_key = mixers.put()
+
+    sisterhood = PointCategory(parent=PointCategory.root_key())
+    sisterhood.name="Sisterhood"
+    sisterhood.sub_categories = [bloob_time_key, mixers_key]
+    sisterhood_key = sisterhood.put()
+
+    philanthropy = PointCategory(parent=PointCategory.root_key())
+    philanthropy.name = "Philanthropy"
+    philanthropy_key = philanthropy.put()
+
+    # Point Exceptions
+    meetings_exception = PointException()
+    meetings_exception.point_category = "meetings"
+    meetings_exception.points_needed = 5
+
+    # Users
+    u = UserData(id='100')
+    u.user_permissions = ['user']
+    u.user_id = '100'
+    u.active = True
+    u.first_name = "Bill"
+    u.last_name = "Gates"
+    u.classification = "senior"
+    u.graduation_year = 2015
+    u.graduation_semester = "fall"
+    u.point_exceptions = [
+        meetings_exception
+    ]
+    u.put()
+
+    u = UserData(id='101')
+    u.user_permissions = ['user']
+    u.user_id = '101'
+    u.active = True
+    u.first_name = "Jake"
+    u.last_name = "Sisko"
+    u.classification = "senior"
+    u.graduation_year = 2015
+    u.graduation_semester = "fall"
+    u.put()
+
+    u = UserData(id='200')
+    u.user_permissions = ['user', 'officer']
+    u.user_id = '200'
+    u.active = False
+    u.first_name = "Bob"
+    u.last_name = "Joe"
+    u.classification = "freshman"
+    u.graduation_year = 2016
+    u.graduation_semester = "spring"
+    u.point_exceptions = [
+        meetings_exception
+    ]
+    u.put()
+
+    # Events
+    e = Event(parent=Event.root_key())
+    e.name = "My First Event"
+    e.date = datetime.datetime(2016, 8, 3)
+    e.point_category = philanthropy_key
+    e.put()
+
+    e = Event(parent=Event.root_key())
+    e.name = "Sisterhood Event"
+    e.date = datetime.datetime(2016, 8, 2)
+    e.point_category = sisterhood_key
+    e.put()
+
+    e = Event(parent=Event.root_key())
+    e.name = "Bloob Time Event"
+    e.date = datetime.datetime(2016,9,1)
+    e.point_category = bloob_time_key
+    e.put()
+
+# TODO rename _testbed to something else
+def setup_testbed():
+    global _testbed
+    _testbed = testbed.Testbed()
+    _testbed.activate()
+    _testbed.init_user_stub()
+    _testbed.init_memcache_stub()
+    _testbed.init_datastore_v3_stub()
+    #ndb.get_context().clear_cache()
+    setup_datastore()
+
+def teardown_testbed():
+    _testbed.deactivate()
+
+def loginUser(email='user@example.com', user_id='123', is_admin=False):
+    _testbed.setup_env(
+        user_email=email,
+        user_id=user_id,
+        user_is_admin='1' if is_admin else '0',
+        overwrite=True)
+
+# TODO setUpModule and tearDownModule each only call one function which is dumb
+def setUpModule():
+    setup_testbed()
+
+def tearDownModule():
+    teardown_testbed()
+
+
 #pylint: disable=too-many-public-methods
 class MainTestCase(unittest.TestCase):
-
-    @staticmethod
-    def setup_datastore():
-        u = UserData(id='100')
-        u.user_permissions = ['user']
-        u.user_id = '100'
-        u.active = True
-        u.first_name = "Bill"
-        u.last_name = "Gates"
-        u.put()
-
-        u = UserData(id='200')
-        u.user_permissions = ['user', 'officer']
-        u.user_id = '200'
-        u.active = True
-        u.first_name = "Bob"
-        u.last_name = "Joe"
-        u.put()
 
     @classmethod
     def setUpClass(cls):
         cls.app = main.app.test_client()
-        cls.testbed = testbed.Testbed()
-        cls.testbed.activate()
-        cls.testbed.init_user_stub()
-        cls.testbed.init_memcache_stub()
-        cls.testbed.init_datastore_v3_stub()
-        #ndb.get_context().clear_cache()
-        cls.setup_datastore()
-        #pylint: disable=maybe-no-member
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.testbed.deactivate()
 
     def setUp(self):
         # Make sure no user is logged in
-        self.loginUser('', '')
-
-    def loginUser(self, email='user@example.com', user_id='123', is_admin=False):
-        self.testbed.setup_env(
-            user_email=email,
-            user_id=user_id,
-            user_is_admin='1' if is_admin else '0',
-            overwrite=True)
+        loginUser('', '')
 
     def test_logged_out_homepage(self):
         rv = self.app.get("/")
@@ -68,12 +145,12 @@ class MainTestCase(unittest.TestCase):
     @mock.patch('main.render_jinja_template')
     def test_logged_in_homepage(self, mock_jinja):
         mock_jinja.return_value = "Hello"
-        self.loginUser(user_id='100')
+        loginUser(user_id='100')
         response = self.app.get("/")
         mock_jinja.assert_called_with('dashboard.html', {'active_page': 'home'})
 
     def test_members_page_off_limits_to_user(self):
-        self.loginUser(user_id='100')
+        loginUser(user_id='100')
         response = self.app.get('/members')
         self.assertEqual(403, response.status_code)
         s = ("You need the following permissions to view that page:"
@@ -81,12 +158,12 @@ class MainTestCase(unittest.TestCase):
         self.assertIn(s, response.data, msg="Does not show necessary permissions")
 
     def test_members_page_available_to_officer(self):
-        self.loginUser(user_id='200')
+        loginUser(user_id='200')
         response = self.app.get('/members')
         self.assertEqual(200, response.status_code)
 
     def test_admin_page_off_limits(self):
-        self.loginUser(user_id='100', is_admin=False)
+        loginUser(user_id='100', is_admin=False)
         response = self.app.get('/admin')
         self.assertEqual(403, response.status_code)
         s = ("You need the following permissions to view that page:"
@@ -94,7 +171,7 @@ class MainTestCase(unittest.TestCase):
         self.assertIn(s, response.data)
 
     def test_profile_redirect_to_username(self):
-        self.loginUser(user_id='100')
+        loginUser(user_id='100')
         response = self.app.get('/profile/100')
         self.assertEqual(302, response.status_code)
         self.assertIn("<title>Redirecting...</title>", response.data)
@@ -102,19 +179,19 @@ class MainTestCase(unittest.TestCase):
         self.assertEqual("http://localhost/profile/BillGates", response.headers['Location'])
 
     def test_profile_username_ok_status(self):
-        self.loginUser(user_id="100")
+        loginUser(user_id="100")
         response = self.app.get('/profile/BillGates')
         self.assertEqual(200, response.status_code)
 
     def test_profile_redirect_me(self):
-        self.loginUser(user_id='100')
+        loginUser(user_id='100')
         response = self.app.get('/profile/me')
         self.assertEqual(302, response.status_code)
         self.assertIn("<title>Redirecting...</title>", response.data)
         self.assertEqual("http://localhost/profile/BillGates", response.headers['Location'])
 
     def test_profile_user_does_not_exist(self):
-        self.loginUser(user_id='200')
+        loginUser(user_id='200')
         response = self.app.get('/profile/1234')
         self.assertEqual(404, response.status_code)
         self.assertIn("User 1234 does not exist",
@@ -122,14 +199,14 @@ class MainTestCase(unittest.TestCase):
                       msg="Missing message saying user doesn't exist")
 
     def test_new_user_postlogin(self):
-        self.loginUser(user_id='404')
+        loginUser(user_id='404')
         response = self.app.get('/postlogin')
         self.assertEqual(302, response.status_code)
         self.assertIn("<title>Redirecting...</title>", response.data)
         self.assertEqual("http://localhost/signup?next=%2F", response.headers['Location'])
 
     def test_user_login_redirect(self):
-        self.loginUser(user_id='100')
+        loginUser(user_id='100')
         next_url = urllib.urlencode({'next': "/profile/100"})
         response = self.app.get('/postlogin?' + next_url)
         self.assertEqual(302, response.status_code)
@@ -151,67 +228,14 @@ class MainTestCase(unittest.TestCase):
 
 class UsersAPITestCase(unittest.TestCase):
 
-    @staticmethod
-    def setup_datastore():
-        u = UserData(id='100')
-        u.user_permissions = ['user']
-        u.user_id = '100'
-        u.active = True
-        u.first_name = "Bill"
-        u.last_name = "Gates"
-        u.classification = "senior"
-        u.graduation_year = 2015
-        u.graduation_semester = "fall"
-        u.put()
-
-        u = UserData(id='101')
-        u.user_permissions = ['user']
-        u.user_id = '101'
-        u.active = True
-        u.first_name = "Jake"
-        u.last_name = "Sisko"
-        u.classification = "senior"
-        u.graduation_year = 2015
-        u.graduation_semester = "fall"
-        u.put()
-
-        u = UserData(id='200')
-        u.user_permissions = ['user', 'officer']
-        u.user_id = '200'
-        u.active = False
-        u.first_name = "Bob"
-        u.last_name = "Joe"
-        u.classification = "freshman"
-        u.graduation_year = 2016
-        u.graduation_semester = "spring"
-        u.put()
-
     def setUp(self):
         # Used to debug 500 errors
         main.app.config['TESTING'] = True
         self.app = main.app.test_client()
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_user_stub()
-        self.testbed.init_memcache_stub()
-        self.testbed.init_datastore_v3_stub()
-        #ndb.get_context().clear_cache()
-        self.setup_datastore()
-        #pylint: disable=maybe-no-member
-
-    def tearDown(self):
-        self.testbed.deactivate()
-
-    def loginUser(self, email='user@example.com', user_id='123', is_admin=False):
-        self.testbed.setup_env(
-            user_email=email,
-            user_id=user_id,
-            user_is_admin='1' if is_admin else '0',
-            overwrite=True)
 
     def test_get_user_list_as_officer(self):
         self.maxDiff = None
-        self.loginUser(user_id="200")
+        loginUser(user_id="200")
         response = self.app.get('/api/users')
         self.assertEqual(200, response.status_code)
         expected = {
@@ -256,13 +280,14 @@ class UsersAPITestCase(unittest.TestCase):
             self.assertIn(u, expected['users'])
 
     def test_get_user_list_forbidden_not_logged_in(self):
+        loginUser('', '')
         response = self.app.get('/api/users')
         self.assertEqual(403, response.status_code)
         data = json.loads(response.data)
         self.assertEqual("Not logged in", data['message'])
 
     def test_get_user_list_forbidden_not_officer(self):
-        self.loginUser(user_id="100")
+        loginUser(user_id="100")
         response = self.app.get('/api/users')
         self.assertEqual(403, response.status_code)
         data = json.loads(response.data)
@@ -270,7 +295,7 @@ class UsersAPITestCase(unittest.TestCase):
         self.assertEqual(['officer'], data['perms'])
 
     def test_post_user_list(self):
-        self.loginUser(user_id="300")
+        loginUser(user_id="300")
         post_data = {
             u'fname': u"James",
             u'lname': u"Kirk",
@@ -293,7 +318,7 @@ class UsersAPITestCase(unittest.TestCase):
 
     def test_post_user_list_bad_classification(self):
         main.app.config['TESTING'] = False
-        self.loginUser(user_id="300")
+        loginUser(user_id="300")
         post_data = {
             "fname": "James",
             "lname": "Kirk",
@@ -306,7 +331,7 @@ class UsersAPITestCase(unittest.TestCase):
 
     def test_post_user_list_empty_first_name(self):
         main.app.config['TESTING'] = False
-        self.loginUser(user_id="300")
+        loginUser(user_id="300")
         post_data = {
             "fname": "",
             "lname": "Kirk",
@@ -319,7 +344,7 @@ class UsersAPITestCase(unittest.TestCase):
 
     def test_post_user_list_empty_last_name(self):
         main.app.config['TESTING'] = False
-        self.loginUser(user_id="300")
+        loginUser(user_id="300")
         post_data = {
             "fname": "James",
             "lname": "",
@@ -332,7 +357,7 @@ class UsersAPITestCase(unittest.TestCase):
 
     def test_post_user_list_string_year(self):
         main.app.config['TESTING'] = False
-        self.loginUser(user_id="300")
+        loginUser(user_id="300")
         post_data = {
             "fname": "James",
             "lname": "Kirk",
@@ -345,7 +370,7 @@ class UsersAPITestCase(unittest.TestCase):
 
     def test_post_user_list_bad_semester(self):
         main.app.config['TESTING'] = False
-        self.loginUser(user_id="300")
+        loginUser(user_id="300")
         post_data = {
             "fname": "James",
             "lname": "Kirk",
@@ -370,7 +395,7 @@ class UsersAPITestCase(unittest.TestCase):
 
     def test_post_user_list_duplicate_username(self):
         main.app.config['TESTING'] = False
-        self.loginUser(user_id="300")
+        loginUser(user_id="300")
         post_data = {
             u'fname': u"Bill",
             u'lname': u"Gates",
@@ -382,7 +407,7 @@ class UsersAPITestCase(unittest.TestCase):
         self.assertEqual(500, response.status_code)
 
     def test_get_own_user(self):
-        self.loginUser(user_id="100")
+        loginUser(user_id="100")
         response = self.app.get('/api/users/100')
         self.assertEqual(200, response.status_code)
         data = json.loads(response.data)
@@ -393,21 +418,26 @@ class UsersAPITestCase(unittest.TestCase):
             u'grad_semester': u"fall",
             u'grad_year': 2015,
             u'lname': u"Gates",
-            u'point_exceptions': [],
+            u'point_exceptions': [
+                {
+                    u'point_category': u'meetings',
+                    u'points_needed': 5
+                }
+            ],
             u'permissions': ['user'],
             u'user_id': u"100",
         }
         self.assertEqual(expected, data)
 
     def test_get_other_user_fails(self):
-        self.loginUser(user_id="100")
+        loginUser(user_id="100")
         response = self.app.get('/api/users/200')
         self.assertEqual(403, response.status_code)
         data = json.loads(response.data)
         self.assertEqual("Don't have permission", data['message'])
 
     def test_get_other_user_as_officer(self):
-        self.loginUser(user_id="200")
+        loginUser(user_id="200")
         response = self.app.get('/api/users/100')
         self.assertEqual(200, response.status_code)
         data = json.loads(response.data)
@@ -418,21 +448,26 @@ class UsersAPITestCase(unittest.TestCase):
             u'grad_semester': u"fall",
             u'grad_year': 2015,
             u'lname': u"Gates",
-            u'point_exceptions': [],
+            u'point_exceptions': [
+                {
+                    u'point_category': u'meetings',
+                    u'points_needed': 5
+                }
+            ],
             u'permissions': ["user"],
             u'user_id': u"100",
         }
         self.assertEqual(expected, data)
 
     def test_put_current_user(self):
-        self.loginUser(user_id="100")
+        loginUser(user_id="100")
         put_data = {
-            'fname': "James",
-            'lname': "Kirk",
-            'active': "false",
-            'classification': "junior",
-            'grad_year': 2016,
-            'grad_semester': "spring",
+            u'fname': u"James",
+            u'lname': u"Kirk",
+            u'active': u"false",
+            u'classification': u"junior",
+            u'grad_year': 2016,
+            u'grad_semester': u"spring",
         }
         response = self.app.put("/api/users/100", data=put_data)
         self.assertEqual(204, response.status_code)
@@ -441,14 +476,19 @@ class UsersAPITestCase(unittest.TestCase):
         # (plus a few extra fields)
         response = self.app.get(response.headers['location'])
         response_data = json.loads(response.data)
-        put_data['active'] = False
-        put_data['user_id'] = "100"
-        put_data['point_exceptions'] = []
-        put_data['permissions'] = ['user']
+        put_data[u'active'] = False
+        put_data[u'user_id'] = "100"
+        put_data[u'point_exceptions'] = [
+            {
+                u'point_category': u'meetings',
+                u'points_needed': 5
+            }
+        ]
+        put_data[u'permissions'] = [u'user']
         self.assertEqual(put_data, response_data)
 
     def test_put_other_user_as_officer(self):
-        self.loginUser(user_id="200")
+        loginUser(user_id="200")
         put_data = {
             u'fname': u"James",
             u'lname': u"Kirk",
@@ -466,12 +506,17 @@ class UsersAPITestCase(unittest.TestCase):
         response_data = json.loads(response.data)
         put_data[u'active'] = False
         put_data[u'user_id'] = u"100"
-        put_data[u'point_exceptions'] = []
+        put_data[u'point_exceptions'] = [
+            {
+                u'point_category': u'meetings',
+                u'points_needed': 5
+            }
+        ]
         put_data[u'permissions'] = ['user']
         self.assertEqual(put_data, response_data)
 
     def test_put_other_user_without_officer(self):
-        self.loginUser(user_id="101")
+        loginUser(user_id="101")
         put_data = {
             'fname': "James",
             'lname': "Kirk",
@@ -498,40 +543,6 @@ class UsersAPITestCase(unittest.TestCase):
 
 class PointExceptionsAPITestCase(unittest.TestCase):
 
-    @staticmethod
-    def setup_datastore():
-        meetings_exception = PointException()
-        meetings_exception.point_category = "meetings"
-        meetings_exception.points_needed = 5
-
-        u = UserData(id='100')
-        u.user_permissions = ['user']
-        u.user_id = '100'
-        u.active = True
-        u.first_name = "Bill"
-        u.last_name = "Gates"
-        u.classification = "senior"
-        u.graduation_year = 2015
-        u.graduation_semester = "fall"
-        u.point_exceptions = [
-            meetings_exception
-        ]
-        u.put()
-
-        u = UserData(id='200')
-        u.user_permissions = ['user', 'officer']
-        u.user_id = '200'
-        u.active = False
-        u.first_name = "Bob"
-        u.last_name = "Joe"
-        u.classification = "freshman"
-        u.graduation_year = 2016
-        u.graduation_semester = "spring"
-        u.point_exceptions = [
-            meetings_exception
-        ]
-        u.put()
-
     def setUp(self):
         # Used to debug 500 errors
         main.app.config['TESTING'] = True
@@ -542,7 +553,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
         self.testbed.init_memcache_stub()
         self.testbed.init_datastore_v3_stub()
         #ndb.get_context().clear_cache()
-        self.setup_datastore()
+        setup_datastore()
         #pylint: disable=maybe-no-member
 
     def tearDown(self):
@@ -739,40 +750,6 @@ class PointExceptionsAPITestCase(unittest.TestCase):
 
 class PermissionsAPITestCase(unittest.TestCase):
 
-    @staticmethod
-    def setup_datastore():
-        meetings_exception = PointException()
-        meetings_exception.point_category = "meetings"
-        meetings_exception.points_needed = 5
-
-        u = UserData(id='100')
-        u.user_permissions = ['user']
-        u.user_id = '100'
-        u.active = True
-        u.first_name = "Bill"
-        u.last_name = "Gates"
-        u.classification = "senior"
-        u.graduation_year = 2015
-        u.graduation_semester = "fall"
-        u.point_exceptions = [
-            meetings_exception
-        ]
-        u.put()
-
-        u = UserData(id='200')
-        u.user_permissions = ['user', 'officer']
-        u.user_id = '200'
-        u.active = False
-        u.first_name = "Bob"
-        u.last_name = "Joe"
-        u.classification = "freshman"
-        u.graduation_year = 2016
-        u.graduation_semester = "spring"
-        u.point_exceptions = [
-            meetings_exception
-        ]
-        u.put()
-
     def setUp(self):
         # Used to debug 500 errors
         main.app.config['TESTING'] = True
@@ -783,7 +760,7 @@ class PermissionsAPITestCase(unittest.TestCase):
         self.testbed.init_memcache_stub()
         self.testbed.init_datastore_v3_stub()
         #ndb.get_context().clear_cache()
-        self.setup_datastore()
+        setup_datastore()
         #pylint: disable=maybe-no-member
 
     def tearDown(self):
@@ -899,57 +876,6 @@ class PermissionsAPITestCase(unittest.TestCase):
 
 class PointCategoriesAPITestCase(unittest.TestCase):
 
-    @staticmethod
-    def setup_datastore():
-        meetings_exception = PointException()
-        meetings_exception.point_category = "meetings"
-        meetings_exception.points_needed = 5
-
-        bloob_time = PointCategory(parent=PointCategory.root_key())
-        bloob_time.name = "Bloob Time"
-        k1 = bloob_time.put()
-
-        mixers = PointCategory(parent=PointCategory.root_key())
-        mixers.name = "Mixers"
-        k2 = mixers.put()
-
-        sisterhood = PointCategory(parent=PointCategory.root_key())
-        sisterhood.name="Sisterhood"
-        sisterhood.sub_categories = [k1, k2]
-        sisterhood.put()
-
-        philanthropy = PointCategory(parent=PointCategory.root_key())
-        philanthropy.name = "Philanthropy"
-        philanthropy.put()
-
-        u = UserData(id='100')
-        u.user_permissions = ['user']
-        u.user_id = '100'
-        u.active = True
-        u.first_name = "Bill"
-        u.last_name = "Gates"
-        u.classification = "senior"
-        u.graduation_year = 2015
-        u.graduation_semester = "fall"
-        u.point_exceptions = [
-            meetings_exception
-        ]
-        u.put()
-
-        u = UserData(id='200')
-        u.user_permissions = ['user', 'officer']
-        u.user_id = '200'
-        u.active = False
-        u.first_name = "Bob"
-        u.last_name = "Joe"
-        u.classification = "freshman"
-        u.graduation_year = 2016
-        u.graduation_semester = "spring"
-        u.point_exceptions = [
-            meetings_exception
-        ]
-        u.put()
-
     def setUp(self):
         # Used to debug 500 errors
         main.app.config['TESTING'] = True
@@ -960,7 +886,7 @@ class PointCategoriesAPITestCase(unittest.TestCase):
         self.testbed.init_memcache_stub()
         self.testbed.init_datastore_v3_stub()
         #ndb.get_context().clear_cache()
-        self.setup_datastore()
+        setup_datastore()
         #pylint: disable=maybe-no-member
 
     def tearDown(self):
@@ -1224,67 +1150,6 @@ class PointCategoriesAPITestCase(unittest.TestCase):
 
 class EventAPITestCase(unittest.TestCase):
 
-    @staticmethod
-    def setup_datastore():
-        bloob_time = PointCategory(parent=PointCategory.root_key())
-        bloob_time.name = "Bloob Time"
-        bloob_time_key = bloob_time.put()
-
-        mixers = PointCategory(parent=PointCategory.root_key())
-        mixers.name = "Mixers"
-        mixers_key = mixers.put()
-
-        sisterhood = PointCategory(parent=PointCategory.root_key())
-        sisterhood.name="Sisterhood"
-        sisterhood.sub_categories = [bloob_time_key, mixers_key]
-        sisterhood_key = sisterhood.put()
-
-        philanthropy = PointCategory(parent=PointCategory.root_key())
-        philanthropy.name = "Philanthropy"
-        philanthropy_key = philanthropy.put()
-
-        u = UserData(id='100')
-        u.user_permissions = ['user']
-        u.user_id = '100'
-        u.active = True
-        u.first_name = "Bill"
-        u.last_name = "Gates"
-        u.classification = "senior"
-        u.graduation_year = 2015
-        u.graduation_semester = "fall"
-        u.point_exceptions = []
-        u.put()
-
-        u = UserData(id='200')
-        u.user_permissions = ['user', 'officer']
-        u.user_id = '200'
-        u.active = False
-        u.first_name = "Bob"
-        u.last_name = "Joe"
-        u.classification = "freshman"
-        u.graduation_year = 2016
-        u.graduation_semester = "spring"
-        u.point_exceptions = []
-        u.put()
-
-        e = Event(parent=Event.root_key())
-        e.name = "My First Event"
-        e.date = datetime.datetime(2016, 8, 3)
-        e.point_category = philanthropy_key
-        e.put()
-
-        e = Event(parent=Event.root_key())
-        e.name = "Sisterhood Event"
-        e.date = datetime.datetime(2016, 8, 2)
-        e.point_category = sisterhood_key
-        e.put()
-
-        e = Event(parent=Event.root_key())
-        e.name = "Bloob Time Event"
-        e.date = datetime.datetime(2016,9,1)
-        e.point_category = bloob_time_key
-        e.put()
-
     def setUp(self):
         # Used to debug 500 errors
         main.app.config['TESTING'] = True
@@ -1295,7 +1160,7 @@ class EventAPITestCase(unittest.TestCase):
         self.testbed.init_memcache_stub()
         self.testbed.init_datastore_v3_stub()
         #ndb.get_context().clear_cache()
-        self.setup_datastore()
+        setup_datastore()
         #pylint: disable=maybe-no-member
 
     def tearDown(self):
@@ -1512,100 +1377,14 @@ class EventAPITestCase(unittest.TestCase):
 
 class PointRecordAPITestCase(unittest.TestCase):
 
-    @staticmethod
-    def setup_datastore():
-        meetings_exception = PointException()
-        meetings_exception.point_category = "meetings"
-        meetings_exception.points_needed = 5
-
-        bloob_time = PointCategory(parent=PointCategory.root_key())
-        bloob_time.name = "Bloob Time"
-        bloob_time_key = bloob_time.put()
-
-        mixers = PointCategory(parent=PointCategory.root_key())
-        mixers.name = "Mixers"
-        mixers_key = mixers.put()
-
-        sisterhood = PointCategory(parent=PointCategory.root_key())
-        sisterhood.name="Sisterhood"
-        sisterhood.sub_categories = [bloob_time_key, mixers_key]
-        sisterhood_key = sisterhood.put()
-
-        philanthropy = PointCategory(parent=PointCategory.root_key())
-        philanthropy.name = "Philanthropy"
-        philanthropy_key = philanthropy.put()
-
-        u = UserData(id='100')
-        u.user_permissions = ['user']
-        u.user_id = '100'
-        u.active = True
-        u.first_name = "Bill"
-        u.last_name = "Gates"
-        u.classification = "senior"
-        u.graduation_year = 2015
-        u.graduation_semester = "fall"
-        u.point_exceptions = [
-            meetings_exception
-        ]
-        u.put()
-
-        u = UserData(id='200')
-        u.user_permissions = ['user', 'officer']
-        u.user_id = '200'
-        u.active = False
-        u.first_name = "Bob"
-        u.last_name = "Joe"
-        u.classification = "freshman"
-        u.graduation_year = 2016
-        u.graduation_semester = "spring"
-        u.point_exceptions = [
-            meetings_exception
-        ]
-        u.put()
-
-        e = Event(parent=Event.root_key())
-        e.name = "My First Event"
-        e.date = datetime.datetime(2016, 8, 3)
-        e.point_category = philanthropy_key
-        e.put()
-
-        e = Event(parent=Event.root_key())
-        e.name = "Sisterhood Event"
-        e.date = datetime.datetime(2016, 8, 2)
-        e.point_category = sisterhood_key
-        e.put()
-
-        e = Event(parent=Event.root_key())
-        e.name = "Bloob Time Event"
-        e.date = datetime.datetime(2016,9,1)
-        e.point_category = bloob_time_key
-        e.put()
-
     def setUp(self):
         # Used to debug 500 errors
         main.app.config['TESTING'] = True
         self.app = main.app.test_client()
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_user_stub()
-        self.testbed.init_memcache_stub()
-        self.testbed.init_datastore_v3_stub()
-        #ndb.get_context().clear_cache()
-        self.setup_datastore()
         #pylint: disable=maybe-no-member
 
-    def tearDown(self):
-        self.testbed.deactivate()
-
-    def loginUser(self, email='user@example.com', user_id='123', is_admin=False):
-        self.testbed.setup_env(
-            user_email=email,
-            user_id=user_id,
-            user_is_admin='1' if is_admin else '0',
-            overwrite=True)
-
     def test_put_nonexistent_point_record(self):
-        self.loginUser(user_id="200")
+        loginUser(user_id="200")
         put_data = {
             u'username': u"BillGates",
             u'event_name': u"Bloob Time Event",
@@ -1629,7 +1408,7 @@ class PointRecordAPITestCase(unittest.TestCase):
         self.assertEqual(expected, response_data)
 
     def test_put_existing_point_record(self):
-        self.loginUser(user_id="200")
+        loginUser(user_id="200")
         put_data = {
             u'username': u"BillGates",
             u'event_name': u"Bloob Time Event",
@@ -1662,4 +1441,5 @@ class PointRecordAPITestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    setup_testbed()
     unittest.main()
