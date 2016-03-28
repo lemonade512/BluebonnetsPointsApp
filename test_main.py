@@ -8,7 +8,7 @@ from google.appengine.ext import testbed
 #from google.appengine.ext import ndb
 
 import main
-from models import UserData, PointException, PointCategory, Event
+from models import UserData, PointException, PointCategory, Event, PointRecord
 
 
 def setup_datastore():
@@ -16,25 +16,29 @@ def setup_datastore():
     # Point Categories
     bloob_time = PointCategory(parent=PointCategory.root_key())
     bloob_time.name = "Bloob Time"
+    bloob_time.member_requirement = 10
     bloob_time_key = bloob_time.put()
 
     mixers = PointCategory(parent=PointCategory.root_key())
     mixers.name = "Mixers"
+    mixers.member_requirement = 8
     mixers_key = mixers.put()
 
     sisterhood = PointCategory(parent=PointCategory.root_key())
     sisterhood.name="Sisterhood"
+    sisterhood.member_requirement = 20
     sisterhood.sub_categories = [bloob_time_key, mixers_key]
     sisterhood_key = sisterhood.put()
 
     philanthropy = PointCategory(parent=PointCategory.root_key())
     philanthropy.name = "Philanthropy"
+    philanthropy.member_requirement = 12
     philanthropy_key = philanthropy.put()
 
     # Point Exceptions
-    meetings_exception = PointException()
-    meetings_exception.point_category = "Mixers"
-    meetings_exception.points_needed = 5
+    mixers_exception = PointException()
+    mixers_exception.point_category = "Mixers"
+    mixers_exception.points_needed = 5
 
     # Users
     u = UserData(id='100')
@@ -47,7 +51,7 @@ def setup_datastore():
     u.graduation_year = 2015
     u.graduation_semester = "fall"
     u.point_exceptions = [
-        meetings_exception
+        mixers_exception
     ]
     u.put()
 
@@ -73,7 +77,7 @@ def setup_datastore():
     u.graduation_year = 2016
     u.graduation_semester = "spring"
     u.point_exceptions = [
-        meetings_exception
+        mixers_exception
     ]
     u.put()
 
@@ -81,6 +85,12 @@ def setup_datastore():
     e = Event(parent=Event.root_key())
     e.name = "My First Event"
     e.date = datetime.datetime(2016, 8, 3)
+    e.point_category = philanthropy_key
+    e.put()
+
+    e = Event(parent=Event.root_key())
+    e.name = "Habitat for Humanity"
+    e.date = datetime.datetime(2016, 3, 4)
     e.point_category = philanthropy_key
     e.put()
 
@@ -96,7 +106,44 @@ def setup_datastore():
     e.point_category = bloob_time_key
     e.put()
 
+    e = Event(parent=Event.root_key())
+    e.name = "Mixers Event"
+    e.date = datetime.datetime(2016,5,3)
+    e.point_category = mixers_key
+    e.put()
+
     # Point Records
+    p = PointRecord()
+    p.event_name = "Mixers Event"
+    p.username = "BillGates"
+    p.points_earned = 2
+    p.put()
+
+    p = PointRecord()
+    p.event_name = "Sisterhood Event"
+    p.username = "JakeSisko"
+    p.points_earned = 1
+    p.put()
+
+    p = PointRecord()
+    p.event_name = "Bloob Time Event"
+    p.username = "JakeSisko"
+    p.points_earned = 3
+    p.put()
+
+    # TODO use next two to test for multiple records of same category
+    p = PointRecord()
+    p.event_name = "Habitat for Humanity"
+    p.username = "BobJoe"
+    p.points_earned = 2
+    p.put()
+
+    p = PointRecord()
+    p.event_name = "My First Event"
+    p.username = "BobJoe"
+    p.points_earned = 1
+    p.put()
+
 
 # TODO rename _testbed to something else
 def setup_testbed():
@@ -912,17 +959,17 @@ class PointCategoriesAPITestCase(unittest.TestCase):
             u'Sisterhood': {
                 u'name': u'Sisterhood',
                 u'baby_requirement': None,
-                u'member_requirement': None,
+                u'member_requirement': 20,
                 u'sub_categories': [
                     {
                         u'name': u'Bloob Time',
                         u'baby_requirement': None,
-                        u'member_requirement': None,
+                        u'member_requirement': 10,
                     },
                     {
                         u'name': u'Mixers',
                         u'baby_requirement': None,
-                        u'member_requirement': None,
+                        u'member_requirement': 8,
                     }
                 ]
             },
@@ -930,7 +977,7 @@ class PointCategoriesAPITestCase(unittest.TestCase):
             u'Philanthropy': {
                 u'name': u'Philanthropy',
                 u'baby_requirement': None,
-                u'member_requirement': None,
+                u'member_requirement': 12,
                 u'sub_categories': [],
             }
         }
@@ -958,39 +1005,12 @@ class PointCategoriesAPITestCase(unittest.TestCase):
         response = self.app.get("/api/point-categories")
         response_data = json.loads(response.data)
         expected = {
-            u'Academics': {
-                u'name': u'Academics',
-                u'baby_requirement': None,
-                u'member_requirement': None,
-                u'sub_categories': [],
-            },
-
-            u'Sisterhood': {
-                u'name': u'Sisterhood',
-                u'baby_requirement': None,
-                u'member_requirement': None,
-                u'sub_categories': [
-                    {
-                        u'name': u'Bloob Time',
-                        u'baby_requirement': None,
-                        u'member_requirement': None,
-                    },
-                    {
-                        u'name': u'Mixers',
-                        u'baby_requirement': None,
-                        u'member_requirement': None,
-                    }
-                ]
-            },
-
-            u'Philanthropy': {
-                u'name': u'Philanthropy',
-                u'baby_requirement': None,
-                u'member_requirement': None,
-                u'sub_categories': [],
-            }
+            u'name': u'Academics',
+            u'baby_requirement': None,
+            u'member_requirement': None,
+            u'sub_categories': [],
         }
-        self.assertEqual(expected, response_data)
+        self.assertEqual(expected, response_data['Academics'])
 
     def test_post_point_category_with_parent(self):
         self.loginUser(user_id="200")
@@ -1006,38 +1026,11 @@ class PointCategoriesAPITestCase(unittest.TestCase):
         response = self.app.get("/api/point-categories")
         response_data = json.loads(response.data)
         expected = {
-            u'Sisterhood': {
-                u'name': u'Sisterhood',
-                u'baby_requirement': None,
-                u'member_requirement': None,
-                u'sub_categories': [
-                    {
-                        u'name': u'Bloob Time',
-                        u'baby_requirement': None,
-                        u'member_requirement': None,
-                    },
-                    {
-                        u'name': u'Mixers',
-                        u'baby_requirement': None,
-                        u'member_requirement': None,
-                    }
-                ]
-            },
-
-            u'Philanthropy': {
-                u'name': u'Philanthropy',
-                u'baby_requirement': None,
-                u'member_requirement': None,
-                u'sub_categories': [
-                    {
-                        u'name': u'Academics',
-                        u'baby_requirement': None,
-                        u'member_requirement': None,
-                    },
-                ],
-            }
+            u'name': u'Academics',
+            u'baby_requirement': None,
+            u'member_requirement': None,
         }
-        self.assertEqual(expected, response_data)
+        self.assertIn(expected, response_data['Philanthropy']['sub_categories'])
 
     def test_post_point_category_as_user(self):
         self.loginUser(user_id="100")
@@ -1062,32 +1055,12 @@ class PointCategoriesAPITestCase(unittest.TestCase):
         response = self.app.get("/api/point-categories")
         response_data = json.loads(response.data)
         expected = {
-            u'Sisterhood': {
-                u'name': u'Sisterhood',
-                u'baby_requirement': None,
-                u'member_requirement': None,
-                u'sub_categories': [
-                    {
-                        u'name': u'Bloob Time',
-                        u'baby_requirement': None,
-                        u'member_requirement': None,
-                    },
-                    {
-                        u'name': u'Mixers',
-                        u'baby_requirement': None,
-                        u'member_requirement': None,
-                    }
-                ]
-            },
-
-            u'Philanthropy': {
-                u'name': u'Philanthropy',
-                u'baby_requirement': None,
-                u'member_requirement': None,
-                u'sub_categories': [],
-            }
+            u'name': u'Philanthropy',
+            u'baby_requirement': None,
+            u'member_requirement': 12,
+            u'sub_categories': [],
         }
-        self.assertEqual(expected, response_data)
+        self.assertEqual(expected, response_data['Philanthropy'])
 
     def test_post_duplicate_point_sub_category(self):
         self.loginUser(user_id="200")
@@ -1103,34 +1076,13 @@ class PointCategoriesAPITestCase(unittest.TestCase):
         response = self.app.get("/api/point-categories")
         response_data = json.loads(response.data)
         expected = {
-            u'Sisterhood': {
-                u'name': u'Sisterhood',
-                u'baby_requirement': None,
-                u'member_requirement': None,
-                u'sub_categories': [
-                    {
-                        u'name': u'Mixers',
-                        u'baby_requirement': None,
-                        u'member_requirement': None,
-                    }
-                ]
-            },
-
-            u'Bloob Time': {
-                u'baby_requirement': None,
-                u'member_requirement': None,
-                u'name': u'Bloob Time',
-                u'sub_categories': [],
-            },
-
-            u'Philanthropy': {
-                u'name': u'Philanthropy',
-                u'baby_requirement': None,
-                u'member_requirement': None,
-                u'sub_categories': [],
-            }
+            u'baby_requirement': None,
+            u'member_requirement': 10,
+            u'name': u'Bloob Time',
+            u'sub_categories': [],
         }
-        self.assertEqual(expected, response_data)
+        self.assertEqual(expected, response_data['Bloob Time'])
+        self.assertNotIn("Bloob Time", response_data['Sisterhood']['sub_categories'])
 
     def test_get_point_category(self):
         response = self.app.get("/api/point-categories/Sisterhood")
@@ -1185,6 +1137,16 @@ class EventAPITestCase(unittest.TestCase):
         expected = {
             u'events': [
                 {
+                    u'date': u"03/04/2016",
+                    u'point-category': u"Philanthropy",
+                    u'name': u"Habitat for Humanity",
+                },
+                {
+                    u'date': u"05/03/2016",
+                    u'point-category': u"Mixers",
+                    u'name': u"Mixers Event",
+                },
+                {
                     u'date': u"08/02/2016",
                     u'point-category': u"Sisterhood",
                     u'name': u"Sisterhood Event",
@@ -1211,6 +1173,11 @@ class EventAPITestCase(unittest.TestCase):
         data = json.loads(response.data)
         expected = {
             u'events': [
+                {
+                    u'date': u'05/03/2016',
+                    u'name': u'Mixers Event',
+                    u'point-category': u'Mixers',
+                },
                 {
                     u'date': u"08/02/2016",
                     u'point-category': u"Sisterhood",
@@ -1298,30 +1265,11 @@ class EventAPITestCase(unittest.TestCase):
         response = self.app.get("/api/events")
         response_data = json.loads(response.data)
         expected = {
-            u'events': [
-                {
-                    u'date': u'03/01/2016',
-                    u'name': u'Spring Fling 2016',
-                    u'point-category': u'Bloob Time'
-                },
-                {
-                    u'date': u'08/02/2016',
-                    u'name': u'Sisterhood Event',
-                    u'point-category': u'Sisterhood'
-                },
-                {
-                    u'date': u'08/03/2016',
-                    u'name': u'My First Event',
-                    u'point-category': u'Philanthropy'
-                },
-                {
-                    u'date': u'09/01/2016',
-                    u'name': u'Bloob Time Event',
-                    u'point-category': u'Bloob Time'
-                }
-            ]
+            u'date': u'03/01/2016',
+            u'name': u'Spring Fling 2016',
+            u'point-category': u'Bloob Time'
         }
-        self.assertEqual(expected, response_data)
+        self.assertIn(expected, response_data['events'])
 
     def test_post_event_duplicate_name(self):
         self.loginUser(user_id="200")
@@ -1359,15 +1307,25 @@ class EventAPITestCase(unittest.TestCase):
         expected = {
             u'events': [
                 {
-                    u'date': u'08/02/2016',
-                    u'name': u'Sisterhood Event',
-                    u'point-category': u'Sisterhood'
+                    u'date': u"03/04/2016",
+                    u'name': u"Habitat for Humanity",
+                    u'point-category': u"Philanthropy",
                 },
                 {
-                    u'date': u'08/03/2016',
-                    u'name': u'My First Event',
-                    u'point-category': u'Philanthropy'
-                }
+                    u'date': u"05/03/2016",
+                    u'name': u"Mixers Event",
+                    u'point-category': u"Mixers",
+                },
+                {
+                    u'date': u"08/02/2016",
+                    u'name': u"Sisterhood Event",
+                    u'point-category': u"Sisterhood",
+                },
+                {
+                    u'date': u"08/03/2016",
+                    u'name': u"My First Event",
+                    u'point-category': u"Philanthropy",
+                },
             ]
         }
         self.assertEqual(expected, response_data)
@@ -1399,16 +1357,12 @@ class PointRecordAPITestCase(unittest.TestCase):
         response = self.app.get("/api/point-records")
         response_data = json.loads(response.data)
         expected = {
-            u'records': [
-                {
-                    u'event_name': "Bloob Time Event",
-                    u'point-category': u'Bloob Time',
-                    u'username': 'BillGates',
-                    u'points-earned': 2.0,
-                }
-            ]
+            u'event_name': "Bloob Time Event",
+            u'point-category': u'Bloob Time',
+            u'username': 'BillGates',
+            u'points-earned': 2.0,
         }
-        self.assertEqual(expected, response_data)
+        self.assertIn(expected, response_data['records'])
 
     def test_put_existing_point_record(self):
         loginUser(user_id="200")
@@ -1431,16 +1385,74 @@ class PointRecordAPITestCase(unittest.TestCase):
         response = self.app.get("/api/point-records")
         response_data = json.loads(response.data)
         expected = {
-            u'records': [
-                {
-                    u'event_name': "Bloob Time Event",
-                    u'point-category': u'Bloob Time',
-                    u'username': 'BillGates',
-                    u'points-earned': 4.0,
-                }
-            ]
+            u'event_name': "Bloob Time Event",
+            u'point-category': u'Bloob Time',
+            u'username': 'BillGates',
+            u'points-earned': 4.0,
         }
-        self.assertEqual(expected, response_data)
+        self.assertIn(expected, response_data['records'])
+
+
+class UserPointsAPITestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.app = main.app.test_client()
+
+    def test_get_points_with_exception(self):
+        loginUser(user_id="100")
+        response = self.app.get('/api/users/100/points')
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.data)
+        expected = {
+            u'required': 5,
+            u'received': 2,
+            u'level': 2
+        }
+        self.assertEqual(expected, data['Sisterhood']['sub_categories']['Mixers'])
+
+    def test_get_points_with_parent_category(self):
+        loginUser(user_id="101")
+        response = self.app.get('/api/users/101/points')
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.data)
+        expected_sisterhood = {
+            u'required': 20,
+            u'received': 4,
+            u'level': 1,
+            u'sub_categories': {
+                "Mixers": {
+                    "received": 0,
+                    "required": 8,
+                    "level": 2
+                },
+                u'Bloob Time': {
+                    u'required': 10,
+                    u'received': 3,
+                    u'level': 2,
+                }
+            }
+        }
+        self.assertEqual(expected_sisterhood, data['Sisterhood'])
+
+    def test_get_points_with_multiple_records(self):
+        loginUser(user_id="200")
+        response = self.app.get('/api/users/200/points')
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.data)
+        expected = {
+            u'required': 12,
+            u'received': 3,
+            u'level': 1,
+            u'sub_categories': {},
+        }
+        self.assertEqual(expected, data['Philanthropy'])
+
+    # TODO:
+    #def test_get_other_user_points_as_user(self):
+    #def test_get_other_user_points_as_officer(self):
 
 
 if __name__ == '__main__':

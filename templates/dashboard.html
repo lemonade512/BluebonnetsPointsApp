@@ -16,28 +16,90 @@ var add_events = function(data) {
     });
 };
 
-$(
-    function() {
-        // Function that toggles child levels
-        $(".progress-expander").click(function() {
-            tr = $(this).parent();
-            level = tr.data('level');
-            stopAction = false;
+var setup_callbacks = function() {
+    // Function that toggles child levels
+    $(".progress-expander").click(function() {
+        tr = $(this).parent();
+        level = tr.data('level');
+        stopAction = false;
 
-            tr.toggleClass('contracted');
-            tr.toggleClass('expanded');
+        tr.toggleClass('contracted');
+        tr.toggleClass('expanded');
 
-            tr.nextAll().each(function() {
-                if ($(this).data('level') === level) {
-                    stopAction = true;
-                }
-                if (!stopAction && $(this).data('level') === level + 1) {
-                    $(this).toggleClass('debug-hidden');
-                }
+        tr.nextAll().each(function() {
+            if ($(this).data('level') === level) {
+                stopAction = true;
+            }
+            if (!stopAction && $(this).data('level') === level + 1) {
+                $(this).toggleClass('debug-hidden');
+            }
+        });
+    });
+}
+
+
+var create_category_row = function(data_level, classes, category_name, required, received) {
+    tr = $('<tr data-level="' + data_level + '" class="' + classes + '"></tr>');
+    tr.append($('<td class="progress-expander"></td>'));
+    tr.append($('<td class="progress-label">' + category_name + '</td>'));
+
+    // Create the progress bar
+    td = $('<td class="progress-bar-container"></td>');
+    progressbar_table = $('<table class="progress-bar"></table>');
+    progressbar_tr = $('<tr></tr>');
+    // TODO don't use floor, handle case with floats
+    for (var i = 0; i < Math.floor(received); i++) {
+        progressbar_tr.append($('<td class="filled-progress"></td>'));
+    }
+    for (var i = 0; i < required - Math.floor(received); i++) {
+        progressbar_tr.append($('<td></td>'));
+    }
+    progressbar_table.append(progressbar_tr);
+    td.append(progressbar_table);
+    tr.append(td);
+
+    var left = Math.max(0, required - Math.floor(received));
+    if (left > 0) {
+        tr.append($('<td class="remaining-points">' + left + ' point(s) needed </td>'));
+    } else {
+        tr.append($('<td class="finished-points">' + left + ' point(s) needed </td>'));
+    }
+
+    return tr;
+}
+
+
+var get_points = function() {
+    $.ajax({
+        // TODO eventually this should use a target_user, not necessarily
+        // the current user
+        url: "/api/users/{{user_data.user_id}}/points",
+    }).success(function (data) {
+        table = $('#point-display');
+        $.each(data, function(name, category) {
+            data_level = "1";
+            classes = "contracted l1";
+
+            tr = create_category_row(data_level, classes, name, category['required'], category['received']);
+            table.append(tr);
+
+            $.each(category['sub_categories'], function(name, sub_cat) {
+                data_level = "2";
+                classes = "debug-hidden l2";
+                tr = create_category_row(data_level, classes, name, sub_cat['required'], sub_cat['received']);
+                table.append(tr);
             });
         });
-    }
-);
+
+        setup_callbacks();
+    });
+}
+
+$(function() {
+    // Needs to be before the function definition below so the progress
+    // expanders are created for the function to be attached to
+    get_points();
+});
 
 
 $(function() {
@@ -47,7 +109,8 @@ $(function() {
 {% endblock %}
 {% block content %}
     <h1> Your Points </h1>
-    <table class="point-display">
+    <table class="point-display" id="point-display">
+        <!--
         <tr data-level="1" class="contracted l1">
             <td class="progress-expander"></td>
             <td class="progress-label">Philanthropy</td>
@@ -219,6 +282,7 @@ $(function() {
 
         <tr data-level="2" class="debug-hidden l2 spacer">
         </tr>
+    -->
     </table>
 
     <h1> Upcoming Events </h1>

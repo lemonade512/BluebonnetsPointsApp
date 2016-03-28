@@ -39,7 +39,7 @@ get_point_exceptions = function() {
 
         $.each(data.point_exceptions, function(i, exception) {
             tr = $("<tr></tr>");
-            tr.append("<td>" + exception.point_type + "</td><td align='center'>" + exception.points_needed + "</td>");
+            tr.append("<td>" + exception.point_category + "</td><td align='center'>" + exception.points_needed + "</td>");
 
             icon = $("<i class='fa fa-trash' />");
             td = $("<td align='center'></td>");
@@ -77,7 +77,6 @@ $(function () {
             success: function() {
                 $('#outcome').html('<span style="color: green">Successfully saved!</span>');
                 if (data['fname'] !== "{{target_user.fname}}" || data['lname'] !== "{{target_user.lname}}" ) {
-                    console.log("Redirecting to proper URL");
                     window.location.replace("/profile/{{target_user.user_id}}");
                 }
             }
@@ -89,8 +88,9 @@ $(function () {
     });
 
     $('#add-exception').submit(function (event) {
+        console.log($('select[name=point-categories]'));
         $.post($(this).attr('action'), {
-            point_type: $('input[name=type]').val(),
+            point_category: $('select[name=point-categories]').val(),
             points_needed: $('input[name=num]').val(),
             target_user_id: "{{ target_user.user_id }}",
         }, function (data) {
@@ -157,8 +157,8 @@ $(function () {
     <form id="add-exception" method="post" action="/api/users/{{target_user.user_id}}/point-exceptions" class="pure-form pure-form-aligned centered-form">
         <div id="point-exceptions"></div>
         <div class="pure-control-group">
-            <label for="type">Point Category</label>
-            <select id="point-categories" name="categories"></select>
+            <label for="point-categories">Point Category</label>
+            <select id="point-categories" name="point-categories"></select>
         </div>
 
         <div class="pure-control-group">

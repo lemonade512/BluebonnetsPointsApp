@@ -168,6 +168,10 @@ class UserData(ndb.Model):
         user_k = ndb.Key('UserData', uid)
         return user_k.get()
 
+    # TODO implement this method!
+    def is_baby(self):
+        return False
+
 
 # NOTE The UserData should be the parent entity of the PointRecord. This will
 # allow you to have strong consistency without too much of a burden of 1 write

@@ -325,6 +325,121 @@ class UserAPI(Resource):
         return response
 
 
+# Returns how many points the user needs for each category. This handles
+# getting all point categories, getting any point exceptions, and using
+# the correct requirement based on if the user is a baby or a full member.
+# Eventually this will also carry information about how the user gained each
+# point and how many community points the user has.
+class UserPointsAPI(Resource):
+
+    @staticmethod
+    def reshape_categories(cat_info):
+        """ Reshape flat list of catory information to include structure.
+
+        Args:
+            cat_info (dict): A flat dictionary of all categories, their point
+                requirements, and their points earned.
+
+        Returns:
+            A structured dictionary with each category, its sub-categoires,
+            points required, and points earned.
+        """
+        out = {}
+
+        # TODO this code is probably duplicated from the PointCategoryListAPI
+        point_categories = PointCategory.query(ancestor=PointCategory.root_key())
+        for cat in point_categories:
+            if cat.parent is None:
+                out[cat.name] = {
+                    "required": cat_info['categories'][cat.name]['required'],
+                    "received": cat_info['categories'][cat.name]['received'],
+                    "level": 1,
+                    "sub_categories": {},
+                }
+
+                invalid_keys = []
+                for key in cat.sub_categories:
+                    sub = key.get()
+
+                    # The key in sub_categories is no longer valid
+                    if sub is None:
+                        invalid_keys.append(key)
+                    else:
+                        sub_cat = {
+                            "required": cat_info['categories'][sub.name]['required'],
+                            "received": cat_info['categories'][sub.name]['received'],
+                            "level": 2,
+                        }
+                        out[cat.name]['sub_categories'][sub.name] = sub_cat
+
+                for key in invalid_keys:
+                    cat.sub_categories.remove(key)
+                if invalid_keys:
+                    cat.put()
+
+        return out
+
+    @require_permissions(['self', 'officer'], output_format='json', logic='or')
+    def get(self, user_id):
+        output = {
+            u'categories': {}
+        }
+
+        user = UserData.get_user_from_id(user_id)
+
+        point_exceptions = {exc.point_category: exc.points_needed for exc in user.point_exceptions}
+        categories = PointCategory.query(ancestor=PointCategory.root_key())
+        for cat in categories:
+            # TODO this could probably be refactored to not have so much replication
+            # Add each category and the required number of points
+            if cat.name in point_exceptions:
+                output['categories'][cat.name] = {
+                    u'required': point_exceptions[cat.name],
+                }
+            elif user.is_baby():
+                output['categories'][cat.name] = {
+                    u'required': cat.baby_requirement,
+                }
+            else:
+                output['categories'][cat.name] = {
+                    u'required': cat.member_requirement,
+                }
+
+            output['categories'][cat.name]['received'] = 0
+            if cat.parent is not None:
+                output['categories'][cat.name]['level'] = 2
+            else:
+                output['categories'][cat.name]['level'] = 1
+
+        # NOTE: At this point I am assuming each category has been added to
+        # the output. If this is not true, the following code will fail
+        # miserably.
+        records = PointRecord.query()
+        #username = user.username
+        records = records.filter(PointRecord.username == user.username)
+        for record in records:
+            event = Event.get_from_name(record.event_name)
+            if event is None:
+                logging.error("Uknown event " + record.event_name + " requested for point record: " + str(record))
+                record.key.delete()
+                continue
+
+            category = event.point_category.get()
+            if record.points_earned is None:
+                record.points_earned = 0
+                record.put()
+            output['categories'][category.name]['received'] += record.points_earned
+
+            # Make sure to also count the points for the parent category
+            if category.parent is not None:
+                output['categories'][category.parent.name]['received'] += record.points_earned
+                output['categories'][category.name]['level'] = 2
+
+        output = self.reshape_categories(output)
+
+        return jsonify(**output)
+
+
 class ExceptionAPI(Resource):
 
     @require_permissions(['self', 'officer'], output_format='json', logic='or')
@@ -391,7 +506,9 @@ class ExceptionListAPI(Resource):
                 p = exc
         if not p:
             p = PointException()
+            print data
             p.point_category = data.get('point_category', type=str)
+            print "Point Category:", data.get('point_category', type=str)
             p.points_needed = data.get('points_needed', type=int)
             user.point_exceptions.append(p)
         else:
@@ -807,6 +924,7 @@ api.add_resource(PointCategoryAPI, '/api/point-categories/<string:name>')
 api.add_resource(EventListAPI, '/api/events')
 api.add_resource(EventAPI, '/api/events/<string:event>')
 api.add_resource(PointRecordAPI, '/api/point-records')
+api.add_resource(UserPointsAPI, '/api/users/<string:user_id>/points')
 
 
 # *************************************************************************** #
