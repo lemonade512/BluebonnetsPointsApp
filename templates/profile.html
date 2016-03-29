@@ -111,6 +111,7 @@ $(function () {
 {% endblock %}
 {% block content %}
     <h2> User Profile </h2>
+    <a href="/dashboard/{{target_user.user_id}}">Link to User Dashboard</a>
     <form id="profile-form" method="put" action="/api/users/{{target_user.user_id}}" class="pure-form pure-form-aligned centered-form">
         <div class="pure-control-group">
             <label for="fname">First Name</label>

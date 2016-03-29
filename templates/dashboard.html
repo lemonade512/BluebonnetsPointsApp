@@ -73,7 +73,7 @@ var get_points = function() {
     $.ajax({
         // TODO eventually this should use a target_user, not necessarily
         // the current user
-        url: "/api/users/{{user_data.user_id}}/points",
+        url: "/api/users/{{target_user.user_id}}/points",
     }).success(function (data) {
         table = $('#point-display');
         $.each(data, function(name, category) {
@@ -108,7 +108,7 @@ $(function() {
 </script>
 {% endblock %}
 {% block content %}
-    <h1> Your Points </h1>
+    <h1> Points for {{target_user.username}} </h1>
     <table class="point-display" id="point-display">
         <!--
         <tr data-level="1" class="contracted l1">

@@ -22,11 +22,42 @@ api = Api(app)
 def index():
     template_values = {
         'active_page': 'home',
+        'target_user': UserData.get_current_user_data(),
     }
     if UserData.get_current_user_data():
         return render_jinja_template("dashboard.html", template_values)
     else:
         return render_jinja_template("index.html", template_values)
+
+
+@app.route('/dashboard')
+@app.route('/dashboard/<user_url_segment>')
+@require_permissions(['self', 'officer'], logic='or')
+def dashboard(user_url_segment=None):
+    if user_url_segment is None:
+        target_user = UserData.get_current_user_data()
+    else:
+        target_user = UserData.get_from_url_segment(user_url_segment)
+    if target_user is None:
+        template_values = {
+            'target_user': user_url_segment,
+        }
+        return render_jinja_template("noprofile.html", template_values), 404
+
+    if target_user.username != user_url_segment:
+        return redirect('/dashboard/{0}'.format(target_user.username))
+
+    # If looking at the current user's profile, hilight the users name in the
+    # nav bar
+    if target_user == UserData.get_current_user_data():
+        return redirect('/'.format(target_user.username))
+    else:
+        active = None
+
+    template_values = {
+        'target_user': target_user,
+    }
+    return render_jinja_template("dashboard.html", template_values)
 
 @app.route('/admin')
 @require_permissions(['admin'])
@@ -118,11 +149,6 @@ def signup():
         'next': request.args.get("next", "/"),
     }
     return render_jinja_template("signup.html", template_values)
-
-@app.route('/dashboard')
-@require_permissions(['user'])
-def dashboard():
-    return redirect(url_for("index"))
 
 @app.route('/point-categories')
 @require_permissions(['officer'])
@@ -506,9 +532,7 @@ class ExceptionListAPI(Resource):
                 p = exc
         if not p:
             p = PointException()
-            print data
             p.point_category = data.get('point_category', type=str)
-            print "Point Category:", data.get('point_category', type=str)
             p.points_needed = data.get('points_needed', type=int)
             user.point_exceptions.append(p)
         else:

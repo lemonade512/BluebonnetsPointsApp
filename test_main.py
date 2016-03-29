@@ -5,6 +5,7 @@ import mock
 import datetime
 
 from google.appengine.ext import testbed
+from google.appengine.ext.ndb import Key
 #from google.appengine.ext import ndb
 
 import main
@@ -197,7 +198,19 @@ class MainTestCase(unittest.TestCase):
         mock_jinja.return_value = "Hello"
         loginUser(user_id='100')
         response = self.app.get("/")
-        mock_jinja.assert_called_with('dashboard.html', {'active_page': 'home'})
+        mock_jinja.assert_called_with('dashboard.html', {
+            'target_user': UserData(key=Key('UserData', '100'),
+                                    active=True,
+                                    classification=u'senior',
+                                    first_name=u'Bill',
+                                    graduation_semester=u'fall',
+                                    graduation_year=2015,
+                                    last_name=u'Gates',
+                                    point_exceptions=[PointException(point_category=u'Mixers', points_needed=5)],
+                                    user_id=u'100',
+                                    user_permissions=[u'user']),
+            'active_page': 'home'
+        })
 
     def test_members_page_off_limits_to_user(self):
         loginUser(user_id='100')

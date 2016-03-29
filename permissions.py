@@ -85,6 +85,13 @@ def check_perms(user_data, perm, other_user=None):
     if perm == 'self' and user_data == other_user:
         return True
 
+    # TODO This allows a user to access a page that does not have a target
+    # user but still requires the 'self' permission. The weirdness of this
+    # and determining the 'other_user' by special case might be indicative
+    # of a deeper problem that needs to be fixed with permissions.
+    if perm == 'self' and other_user is None:
+        return True
+
     if perm == 'other' and user_data != other_user:
         return True
 
