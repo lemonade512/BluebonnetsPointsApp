@@ -416,20 +416,31 @@ class UserPointsAPI(Resource):
         point_exceptions = {exc.point_category: exc.points_needed for exc in user.point_exceptions}
         categories = PointCategory.query(ancestor=PointCategory.root_key())
         for cat in categories:
-            # TODO this could probably be refactored to not have so much replication
+            # TODO Write tests to test the behavior when calculating requirement for
+            # a category with children having a higher requirement. (i.e. max(self, children))
+
+            # TODO remove some of the ugly repeated code below
             # Add each category and the required number of points
-            if cat.name in point_exceptions:
-                output['categories'][cat.name] = {
-                    u'required': point_exceptions[cat.name],
-                }
-            elif user.is_baby():
-                output['categories'][cat.name] = {
-                    u'required': cat.baby_requirement,
-                }
+            if user.is_baby():
+                requirement = cat.baby_requirement
+                if requirement is None:
+                    requirement = 0
+                sub_req = sum([sub.get().baby_requirement for sub in cat.sub_categories])
+                requirement = max(requirement, sub_req)
             else:
-                output['categories'][cat.name] = {
-                    u'required': cat.member_requirement,
-                }
+                requirement = cat.member_requirement
+                if requirement is None:
+                    requirement = 0
+                sub_req = sum([sub.get().member_requirement for sub in cat.sub_categories])
+                requirement = max(requirement, sub_req)
+
+            if cat.name in point_exceptions:
+                requirement = point_exceptions[cat.name]
+
+            output['categories'][cat.name] = {
+                u'required': requirement,
+            }
+
 
             output['categories'][cat.name]['received'] = 0
             if cat.parent is not None:
