@@ -142,3 +142,17 @@ select {
     background: white;
 }
 
+@media screen and (max-width: 75em) {
+    #left-col {
+        width: 5%;
+    }
+
+    #right-col {
+        width: 5%;
+    }
+
+    #content {
+        width: 90%;
+    }
+}
+
