@@ -41,6 +41,7 @@ get_point_exceptions = function() {
             tr = $("<tr></tr>");
             tr.append("<td>" + exception.point_category + "</td><td align='center'>" + exception.points_needed + "</td>");
 
+            {% if check_perms(user_data, "officer") %}
             icon = $("<i class='fa fa-trash' />");
             td = $("<td align='center'></td>");
             btn = $("<button type='button' class='pure-button rounded' />").click(function() {
@@ -49,6 +50,7 @@ get_point_exceptions = function() {
 
             btn.append(icon);
             td.append(btn);
+            {% endif %}
 
             tr.append(td);
             tbody.append(tr);
@@ -87,6 +89,7 @@ $(function () {
         event.preventDefault();
     });
 
+    {% if check_perms(user_data, "officer") %}
     $('#add-exception').submit(function (event) {
         console.log($('select[name=point-categories]'));
         $.post($(this).attr('action'), {
@@ -105,6 +108,7 @@ $(function () {
     PointCategories.init();
     PointCategorySelectView.init('#point-categories', "");
     PointCategories.get_point_categories(PointCategorySelectView.render);
+    {% endif %}
     get_point_exceptions();
 });
 </script>
@@ -155,6 +159,7 @@ $(function () {
 
     <h2>Point Reductions</h2>
 
+    {% if check_perms(user_data, "officer") %}
     <form id="add-exception" method="post" action="/api/users/{{target_user.user_id}}/point-exceptions" class="pure-form pure-form-aligned centered-form">
         <div id="point-exceptions"></div>
         <div class="pure-control-group">
@@ -171,4 +176,7 @@ $(function () {
             <input type="submit" class="pure-button" value="Add" />
         </div>
     </form>
+    {% else %}
+    <div id="point-exceptions"></div>
+    {% endif %}
 {% endblock %}
