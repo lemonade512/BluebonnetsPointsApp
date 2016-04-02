@@ -11,6 +11,13 @@ var add_users = function(data) {
         '</thead>'
     )
     $.each(data.users, function(i, user) {
+        if (!user.classification) {
+            user.classification = "None";
+        }
+
+        if (!user.grad_semester) {
+            user.grad_semester = "None";
+        }
         $("#users").append(
             '<tr>' +
             '<td>' + (i+1) + '</td>' +
