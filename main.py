@@ -425,13 +425,30 @@ class UserPointsAPI(Resource):
                 requirement = cat.baby_requirement
                 if requirement is None:
                     requirement = 0
-                sub_req = sum([sub.get().baby_requirement for sub in cat.sub_categories])
+
+                sub_req_list = []
+                for sub in cat.sub_categories:
+                    req = sub.get().member_requirement
+                    if req is None:
+                        sub_req_list.append(0)
+                    else:
+                        sub_req_list.append(req)
+                sub_req = sum(sub_req_list)
                 requirement = max(requirement, sub_req)
             else:
                 requirement = cat.member_requirement
                 if requirement is None:
                     requirement = 0
-                sub_req = sum([sub.get().member_requirement for sub in cat.sub_categories])
+
+                # TODO add test when one of the requirements is None
+                sub_req_list = []
+                for sub in cat.sub_categories:
+                    req = sub.get().member_requirement
+                    if req is None:
+                        sub_req_list.append(0)
+                    else:
+                        sub_req_list.append(req)
+                sub_req = sum(sub_req_list)
                 requirement = max(requirement, sub_req)
 
             if cat.name in point_exceptions:
