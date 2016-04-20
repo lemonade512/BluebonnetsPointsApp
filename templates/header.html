@@ -1,20 +1,33 @@
-{% set navigation_bar = [
-    ('/', 'home', 'Home'),
-    ('/admin', 'admin', 'Admin'),
-    ('/members', 'members', 'Members'),
-    ('/point-categories', 'point-categories', 'Point Categories'),
-    ('/events', 'events', 'Events'),
-    ('/permissions', 'permissions', 'Permissions'),
-] %}
 <div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
     <a href="/" class="pure-menu-heading pure-menu-link">Texas Bluebonnets</a>
     <ul class="pure-menu-list">
-        {% for href, id, caption in navigation_bar %}
-        <li class="pure-menu-item{% if id == active_page %} pure-menu-selected{% endif %}">
-            <a href="{{ href|e }}" class="pure-menu-link">{{ caption|e }}</a>
+        <li class="pure-menu-item{% if "home" == active_page %} pure-menu-selected{% endif %}">
+            <a href="/" class="pure-menu-link">Home</a>
         </li>
-        {% endfor %}
+
+        {% if js_admin %}
+        <li class="pure-menu-item{% if "admin" == active_page %} pure-menu-selected{% endif %}">
+            <a href="/admin" class="pure-menu-link">Admin</a>
+        </li>
+        {% endif %}
+
         {% if user_data %}
+
+        {% if check_perms(user_data, "officer") %}
+        <li class="pure-menu-item{% if "permissions" == active_page %} pure-menu-selected{% endif %}">
+            <a href="/permissions" class="pure-menu-link">Permissions</a>
+        </li>
+        <li class="pure-menu-item{% if "members" == active_page %} pure-menu-selected{% endif %}">
+            <a href="/members" class="pure-menu-link">Members</a>
+        </li>
+        <li class="pure-menu-item{% if "point-categories" == active_page %} pure-menu-selected{% endif %}">
+            <a href="/point-categories" class="pure-menu-link">Point Categories</a>
+        </li>
+        <li class="pure-menu-item{% if "events" == active_page %} pure-menu-selected{% endif %}">
+            <a href="/events" class="pure-menu-link">Events</a>
+        </li>
+        {% endif %}
+
         <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover{% if 'profile' == active_page %} pure-menu-selected{% endif %}">
             <a href="/profile/{{ user_data.user_id }}" class="pure-menu-link">{{ user_data.first_name }}</a>
             <ul class="pure-menu-children">

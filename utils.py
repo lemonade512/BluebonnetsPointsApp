@@ -21,6 +21,7 @@ def render_jinja_template(name, context=None):
         'login_url': url_for('login', next=request.path),
         'logout_url': users.create_logout_url("/"),
         'check_perms': check_perms,
+        'is_admin': users.is_current_user_admin(),
     }
 
     if context != None:
