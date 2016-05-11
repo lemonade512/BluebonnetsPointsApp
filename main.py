@@ -87,7 +87,7 @@ def permissions():
 
     return render_jinja_template("permissions.html", template_values)
 
-# TODO The only people who should be able to view a users profile page are
+# TODO (phillip): The only people who should be able to view a users profile page are
 # officers and the user himself
 @app.route('/profile/<user_url_segment>')
 @require_permissions(['self', 'officer'], logic='or')
@@ -124,7 +124,7 @@ def login():
     }
     return render_jinja_template("login.html", template_values)
 
-# TODO There might be an issue if the user logs into their google account then doesn't
+# TODO (phillip): There might be an issue if the user logs into their google account then doesn't
 # go through the signup process. Then if they click the back button a few times they will
 # be logged into their google account but not have their UserData setup which could be
 # an issue. Just make sure to be careful of that
@@ -166,7 +166,7 @@ def event_list():
     }
     return render_jinja_template('events.html', template_values)
 
-# TODO handle the case when the event does not exist
+# TODO (phillip): handle the case when the event does not exist
 @app.route('/events/<event>')
 def event(event):
     event = Event.get_from_name(event)
@@ -197,7 +197,7 @@ def application_error(e):
 #                               API                                           #
 # *************************************************************************** #
 
-# TODO I need to return the proper error response when a request does not
+# TODO (phillip): I need to return the proper error response when a request does not
 # contain the proper data. See http://stackoverflow.com/questions/3050518/what-http-status-response-code-should-i-use-if-the-request-is-missing-a-required
 
 class UserListAPI(Resource):
@@ -219,7 +219,7 @@ class UserListAPI(Resource):
 
         data = {"users":[]}
         for u in q:
-            # TODO code to create a user json object is duplicated in multiple
+            # TODO (phillip): code to create a user json object is duplicated in multiple
             # places. I should keep it in one spot (maybe UserData)
             data['users'].append({
                 "fname": u.first_name,
@@ -241,7 +241,7 @@ class UserListAPI(Resource):
         information for the currently logged in google user. If there is no
         google user logged in an error is thrown.
         """
-        # TODO this method throws generic exceptions that really can't be
+        # TODO (phillip): this method throws generic exceptions that really can't be
         # properly handled by the client in a user-friendly way. I should
         # really return error codes here so the client knows what went wrong
         # other than a generic server error
@@ -264,7 +264,7 @@ class UserListAPI(Resource):
         if data['lname'] == "":
             raise Exception("The first name was empty")
 
-        # TODO A duplicate username should produce a better error than a 500
+        # TODO (phillip): A duplicate username should produce a better error than a 500
         other_users = UserData.query()
         other_user = None
         for user in other_users:
@@ -281,7 +281,7 @@ class UserListAPI(Resource):
         user_data.user_permissions = ['user']
         user_data.put()
 
-        # TODO find a better way that doesn't require you to remember to add
+        # TODO (phillip): find a better way that doesn't require you to remember to add
         # this line every single time you want to create a UserData object.
         # Create the necessary point records
         user_data.populate_records()
@@ -292,7 +292,7 @@ class UserListAPI(Resource):
         return response
 
 
-# TODO possibly allow for using username in place of user_id
+# TODO (phillip): possibly allow for using username in place of user_id
 class UserAPI(Resource):
 
     @require_permissions(['self', 'officer'], output_format='json', logic='or')
@@ -340,13 +340,13 @@ class UserAPI(Resource):
         user.graduation_year = data.get('grad_year', type=int)
         user.put()
 
-        # TODO A put request (and really any other request that creates or
+        # TODO (phillip): A put request (and really any other request that creates or
         # updates an object) should return the new representation of that
         # object so clients don't need to make more API calls
 
         response = jsonify()
         response.status_code = 204
-        # TODO I believe only POST requests need to return this header
+        # TODO (phillip): I believe only POST requests need to return this header
         response.headers['location'] = '/api/users/' + str(user.user_id)
         return response
 
@@ -372,7 +372,7 @@ class UserPointsAPI(Resource):
         """
         out = {}
 
-        # TODO this code is probably duplicated from the PointCategoryListAPI
+        # TODO (phillip): this code is probably duplicated from the PointCategoryListAPI
         point_categories = PointCategory.query(ancestor=PointCategory.root_key())
         for cat in point_categories:
             if cat.parent is None:
@@ -416,10 +416,10 @@ class UserPointsAPI(Resource):
         point_exceptions = {exc.point_category: exc.points_needed for exc in user.point_exceptions}
         categories = PointCategory.query(ancestor=PointCategory.root_key())
         for cat in categories:
-            # TODO Write tests to test the behavior when calculating requirement for
+            # TODO (phillip): Write tests to test the behavior when calculating requirement for
             # a category with children having a higher requirement. (i.e. max(self, children))
 
-            # TODO remove some of the ugly repeated code below
+            # TODO (phillip): remove some of the ugly repeated code below
             # Add each category and the required number of points
             if user.is_baby():
                 requirement = cat.baby_requirement
@@ -440,7 +440,7 @@ class UserPointsAPI(Resource):
                 if requirement is None:
                     requirement = 0
 
-                # TODO add test when one of the requirements is None
+                # TODO (phillip): add test when one of the requirements is None
                 sub_req_list = []
                 for sub in cat.sub_categories:
                     req = sub.get().member_requirement
@@ -515,7 +515,7 @@ class ExceptionAPI(Resource):
 
         return jsonify(**data)
 
-    # TODO delete needs to be idempotent
+    # TODO (phillip): delete needs to be idempotent
     @require_permissions(['other', 'officer'], output_format='json')
     def delete(self, user_id, index):
         user = UserData.get_user_from_id(user_id)
@@ -551,7 +551,7 @@ class ExceptionListAPI(Resource):
         if not user:
             raise Exception("I don't know that person")
 
-        #TODO The flow of this code looks more complicated and confusing than it
+        #TODO (phillip): The flow of this code looks more complicated and confusing than it
         # needs to be. Try to clean it up
         data = request.form
         p = None
@@ -592,7 +592,7 @@ class PermissionListAPI(Resource):
         data = request.form
         perm = data['permission']
         if perm not in user.user_permissions:
-            # TODO an officer could theoretically give themselves 'admin'
+            # TODO (phillip): an officer could theoretically give themselves 'admin'
             # privileges using this function. They wouldn't get actual google
             # admin privileges but it would fool my permissions system
             user.user_permissions.append(perm)
@@ -667,7 +667,7 @@ class PointCategoryListAPI(Resource):
         new_category = None
         new_key = None
 
-        # TODO we shouldn't put anything in the datastore if there is an error.
+        # TODO (phillip): we shouldn't put anything in the datastore if there is an error.
         # Therefore, we should wait until the end of the function to call a
         # put if possible.
 
@@ -691,7 +691,7 @@ class PointCategoryListAPI(Resource):
 
         # If necessary, add the proper key to the parent category
         parent = data.get('parent', None)
-        # TODO Should I really also be checking for "none"? Is there a
+        # TODO (phillip): Should I really also be checking for "none"? Is there a
         # better way?
         if parent is not None and parent != "none":
             parent = PointCategory.get_from_name(parent)
@@ -745,7 +745,7 @@ class PointCategoryAPI(Resource):
             category.member_requirement = int(member_requirement)
         category.put()
 
-        # TODO A put request (and really any other request that creates or
+        # TODO (phillip): A put request (and really any other request that creates or
         # updates an object) should return the new representation of that
         # object so clients don't need to make more API calls
 
@@ -829,7 +829,7 @@ class EventAPI(Resource):
     def get(self, event):
         event = Event.get_from_name(event)
         if event is None:
-            # TODO this code is duplicated, maybe make some sort of default
+            # TODO (phillip): this code is duplicated, maybe make some sort of default
             # handler that can be called for any resource that doesn't exist?
             response = jsonify(message="Resource does not exist")
             response.status_code = 404
@@ -846,7 +846,7 @@ class EventAPI(Resource):
     def delete(self, event):
         event = Event.get_from_name(event)
         if event is None:
-            # TODO this code is duplicated, maybe make some sort of default
+            # TODO (phillip): this code is duplicated, maybe make some sort of default
             # handler that can be called for any resource that doesn't exist?
             response = jsonify(message="Resource does not exist")
             response.status_code = 404
@@ -867,7 +867,7 @@ class EventAPI(Resource):
 
         event = Event.get_from_name(event)
         if event is None:
-            # TODO this code is duplicated, maybe make some sort of default
+            # TODO (phillip): this code is duplicated, maybe make some sort of default
             # handler that can be called for any resource that doesn't exist?
             response = jsonify(message="Resource does not exist")
             response.status_code = 404
@@ -896,13 +896,13 @@ class EventAPI(Resource):
 
 class PointRecordAPI(Resource):
 
-    # TODO write tests for this method
+    # TODO (phillip): write tests for this method
     def get(self):
         event_name = request.args.get("event_name", "all")
         username = request.args.get("username", "all")
 
         records = PointRecord.query()
-        # TODO probably shouldn't make these special cases?
+        # TODO (phillip): probably shouldn't make these special cases?
         if event_name != "all":
             records = records.filter(PointRecord.event_name == event_name)
 
@@ -943,12 +943,12 @@ class PointRecordAPI(Resource):
 
         point_record = PointRecord.query(PointRecord.event_name == event.name,
                                          PointRecord.username == user_data.username).get()
-        # TODO this might allow me to not create new records every time a
+        # TODO (phillip): this might allow me to not create new records every time a
         # new event or user is created because a record will be created when
         # the client tries to modify a record that should exist
         # Create a point record if one does not exist
         if not point_record:
-            # TODO does this work with the user key as the ancestor?
+            # TODO (phillip): does this work with the user key as the ancestor?
             point_record = PointRecord(parent=user_data.key)
 
         point_record.event_name = event.name
@@ -956,7 +956,7 @@ class PointRecordAPI(Resource):
         point_record.points_earned = float(data['points-earned'])
         point_record.put()
 
-        # TODO A put request (and really any other request that creates or
+        # TODO (phillip): A put request (and really any other request that creates or
         # updates an object) should return the new representation of that
         # object so clients don't need to make more API calls
 

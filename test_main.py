@@ -132,7 +132,7 @@ def setup_datastore():
     p.points_earned = 3
     p.put()
 
-    # TODO use next two to test for multiple records of same category
+    # TODO (phillip): use next two to test for multiple records of same category
     p = PointRecord()
     p.event_name = "Habitat for Humanity"
     p.username = "BobJoe"
@@ -146,7 +146,7 @@ def setup_datastore():
     p.put()
 
 
-# TODO rename _testbed to something else
+# TODO (phillip): rename _testbed to something else
 def setup_testbed():
     global _testbed
     _testbed = testbed.Testbed()
@@ -167,7 +167,7 @@ def loginUser(email='user@example.com', user_id='123', is_admin=False):
         user_is_admin='1' if is_admin else '0',
         overwrite=True)
 
-# TODO setUpModule and tearDownModule each only call one function which is dumb
+# TODO (phillip): setUpModule and tearDownModule each only call one function which is dumb
 def setUpModule():
     setup_testbed()
 
@@ -238,7 +238,7 @@ class MainTestCase(unittest.TestCase):
         response = self.app.get('/profile/100')
         self.assertEqual(302, response.status_code)
         self.assertIn("<title>Redirecting...</title>", response.data)
-        # TODO test a user with the same name being redirected to a different username
+        # TODO (phillip): test a user with the same name being redirected to a different username
         self.assertEqual("http://localhost/profile/BillGates", response.headers['Location'])
 
     def test_profile_username_ok_status(self):
@@ -282,7 +282,7 @@ class MainTestCase(unittest.TestCase):
         self.assertIn("<h3>Page Not Found</h3>", response.data)
 
 
-# TODO think of a scheme for testing permissions like the following.
+# TODO (phillip): think of a scheme for testing permissions like the following.
 # The dictionary is keeyed by the endpoint and for each endpoint there
 # is a list of methods to run and a list of data to use for each method.
 # Then there is an expected response code? (Just an idea to follow DRY)
@@ -622,7 +622,7 @@ class PointExceptionsAPITestCase(unittest.TestCase):
     def tearDown(self):
         self.testbed.deactivate()
 
-    # TODO this code is duplicated in all api tests
+    # TODO (phillip): this code is duplicated in all api tests
     def loginUser(self, email='user@example.com', user_id='123', is_admin=False):
         self.testbed.setup_env(
             user_email=email,
@@ -829,7 +829,7 @@ class PermissionsAPITestCase(unittest.TestCase):
     def tearDown(self):
         self.testbed.deactivate()
 
-    # TODO this code is duplicated in all api tests
+    # TODO (phillip): this code is duplicated in all api tests
     def loginUser(self, email='user@example.com', user_id='123', is_admin=False):
         self.testbed.setup_env(
             user_email=email,
@@ -1108,7 +1108,7 @@ class PointCategoriesAPITestCase(unittest.TestCase):
         }
         self.assertEqual(expected, data)
 
-    # TODO
+    # TODO (phillip):
     #def test_get_point_category_with_spaces(self):
     #def test_post_duplicate_point_category_with_diff_spaces(self):
     #def test_delete_point_category_as_officer(self):
@@ -1463,7 +1463,7 @@ class UserPointsAPITestCase(unittest.TestCase):
         }
         self.assertEqual(expected, data['Philanthropy'])
 
-    # TODO:
+    # TODO (phillip):
     #def test_get_other_user_points_as_user(self):
     #def test_get_other_user_points_as_officer(self):
 

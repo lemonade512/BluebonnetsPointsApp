@@ -6,7 +6,7 @@ from flask import jsonify
 
 from utils import render_jinja_template
 
-# TODO document somewhere what permissions are allowed
+# TODO (phillip): document somewhere what permissions are allowed
 # Possible permissions:
 #   * user - A logged in user
 #   * officer - An officer
@@ -15,7 +15,7 @@ from utils import render_jinja_template
 #   * other - function must have a user_id passed in as a keyword argument and
 #       the user_id must be different than the current user
 
-# TODO This function is a bit hacky but it works and it makes it easy
+# TODO (phillip): This function is a bit hacky but it works and it makes it easy
 # to specify nice looking permissions decorators for any endpoint
 def require_permissions(perms, logic='and', output_format='html'):
     def decorator(f):
@@ -85,7 +85,7 @@ def check_perms(user_data, perm, other_user=None):
     if perm == 'self' and user_data == other_user:
         return True
 
-    # TODO This allows a user to access a page that does not have a target
+    # TODO (phillip): This allows a user to access a page that does not have a target
     # user but still requires the 'self' permission. The weirdness of this
     # and determining the 'other_user' by special case might be indicative
     # of a deeper problem that needs to be fixed with permissions.

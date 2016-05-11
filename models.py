@@ -32,7 +32,7 @@ class PointCategory(ndb.Model):
         The spaces in `name` are ignored in order to make urls look nicer
         without any spaces.
         """
-        # TODO since this function ignores spaces in the PointCategory name,
+        # TODO (phillip): since this function ignores spaces in the PointCategory name,
         # I should make sure we can't make duplicate point categories after
         # spaces have been removed.
         q = PointCategory.query(ancestor=PointCategory.root_key())
@@ -47,7 +47,7 @@ class PointException(ndb.Model):
     """ A user-specific point exception """
 
     # The type of points to make an exception for
-    # TODO add a `choices` option to the string property depending on point
+    # TODO (phillip): add a `choices` option to the string property depending on point
     # type options
     #point_category = ndb.StructuredProperty(PointCategory, indexed=False)
     point_category = ndb.StringProperty(indexed=False)
@@ -65,7 +65,7 @@ class UserData(ndb.Model):
     # as the fields of this property can change; only the ID is stable and
     # userid can be used as a unique identifier instead. See the following
     # for further info https://cloud.google.com/appengine/articles/auth?hl=en
-    # TODO do we actually need to index user? I don't think we should ever
+    # TODO (phillip): do we actually need to index user? I don't think we should ever
     # use it in a query.
     user = ndb.UserProperty(indexed=True)
 
@@ -111,10 +111,10 @@ class UserData(ndb.Model):
 
     @staticmethod
     def get_from_url_segment(url_segment):
-        # TODO this flow is a bit weird. There is theoretically a problem if a
+        # TODO (phillip): this flow is a bit weird. There is theoretically a problem if a
         # a user_id is the same as a username because it will get the user with
         # the id before anything else.
-        # TODO Instead we could save the user_id and key as 'id_' + user.user_id()
+        # TODO (phillip): Instead we could save the user_id and key as 'id_' + user.user_id()
         # (i.e. we have the id_ prefix and can check for that in the url_segment)
         if url_segment == "me":
             return UserData.get_user_from_id(users.get_current_user().user_id())
@@ -125,7 +125,7 @@ class UserData(ndb.Model):
 
         return user_data
 
-    # TODO when creating users we need a way to ensure unique usernames that
+    # TODO (phillip): when creating users we need a way to ensure unique usernames that
     # are generated using the user's first and last name
     @property
     def username(self):
@@ -153,8 +153,8 @@ class UserData(ndb.Model):
 
     @staticmethod
     def get_from_username(username):
-        # TODO this method sucks
-        # TODO this is not strongly consistent because users are not stored in
+        # TODO (phillip): this method sucks
+        # TODO (phillip): this is not strongly consistent because users are not stored in
         # an entity group and we are not querying by key only.
         q = UserData.query()
         for u in q:
@@ -168,7 +168,7 @@ class UserData(ndb.Model):
         user_k = ndb.Key('UserData', uid)
         return user_k.get()
 
-    # TODO implement this method!
+    # TODO (phillip): implement this method!
     def is_baby(self):
         return False
 
@@ -177,7 +177,7 @@ class UserData(ndb.Model):
 # allow you to have strong consistency without too much of a burden of 1 write
 # per second in an entity group.
 class PointRecord(ndb.Model):
-    # TODO find a way to use keys instead of strings, but for now this should
+    # TODO (phillip): find a way to use keys instead of strings, but for now this should
     # work just fine.
     username = ndb.StringProperty()
     event_name = ndb.StringProperty()
@@ -192,13 +192,13 @@ class PointRecord(ndb.Model):
     points_earned = ndb.FloatProperty()
 
 
-# TODO how should I handle timezones? Also, how should I handle dates without
+# TODO (phillip): how should I handle timezones? Also, how should I handle dates without
 # times?
 class Event(ndb.Model):
     name = ndb.StringProperty()
     date = ndb.DateTimeProperty()
     point_category = ndb.KeyProperty(kind="PointCategory")
-    # TODO should I add an archived property?
+    # TODO (phillip): should I add an archived property?
 
     def populate_records(self):
         # Create point records for all users for this event
@@ -223,7 +223,7 @@ class Event(ndb.Model):
         is most likely used by appengine itself so be very careful.
         """
 
-        # TODO test the deletion of PointRecords
+        # TODO (phillip): test the deletion of PointRecords
         # Delete all PointRecords associated with this event
         q = PointRecord.query(PointRecord.event_name == self.name)
         for r in q:
@@ -240,7 +240,7 @@ class Event(ndb.Model):
     @staticmethod
     def root_key():
         """ Creates a root key for all events. """
-        # TODO having the same key for all events may be inefficient, so
+        # TODO (phillip): having the same key for all events may be inefficient, so
         # at some point I should look into changing this.
         return ndb.Key("RootEvent", DEFAULT_ROOT_KEY)
 
