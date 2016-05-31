@@ -1,10 +1,9 @@
 from google.appengine.api import users
-
-from models import UserData
 from functools import wraps
 from flask import jsonify
 
-from utils import render_jinja_template
+from utils.jinja import render_jinja_template
+from models.user_model import UserData
 
 # TODO (phillip): document somewhere what permissions are allowed
 # Possible permissions:

@@ -13,4 +13,4 @@ deploy-test:
 	appcfg.py -A bluebonnets-test update .
 
 test:
-	python test_runner.py ~/google_appengine .
+	python run_tests.py ~/lib/google_appengine tests
