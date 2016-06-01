@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Index{% endblock %}
+{% block content %}
+    <h1> Index </h1>
+    <p>
+        Welcome to the main page{% if user_data %} {{user_data.first_name}}{% endif %}!
+        Please login to see your points.
+    </p>
+{% endblock %}

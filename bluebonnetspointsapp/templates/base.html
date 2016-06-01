@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+    <head>
+        {% block head %}
+        <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css" />
+        <link rel="stylesheet" href="/static/css/main.css" />
+        <link rel="shortcut icon" href="/favicon.ico?v=1"/>
+        <link rel="stylesheet" href="/static/font-awesome/css/font-awesome.min.css">
+        <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/grids-responsive-min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>{% block title %}Flask{% endblock %} - test</title>
+
+        {% endblock %}
+
+        {% block global_javascript %}
+        <script src="/javascript/util.js"></script>
+        <script src="/javascript/api.js"></script>
+        <script src="/javascript/views.js"></script>
+        {% endblock %}
+
+        {% block javascript %}
+        {% endblock %}
+    </head>
+    <body>
+        <div id="wrapper">
+            <div id="header">
+                {% block header %}
+                    {% set active_page = active_page|default('') %}
+                    {% include 'header.html' %}
+                {% endblock %}
+
+            </div>
+            <div class="pure-g">
+                <!-- TODO figure out how to properly use grids here. Right now I
+                     am having difficulties using responsive grids and still
+                     having everything centered. -->
+                <div id="left-col" class="pure-u-1-4"></div>
+                <div id="content" class="pure-u-1-2">
+                    {% block content %}{% endblock %}
+                </div>
+                <div id="right-col" class="pure-u-1-4"></div>
+            </div>
+            <div id="footer">
+                {% block footer %}
+                &copy; Copyright 2015 by TX Bluebonnets
+                {% endblock %}
+            </div>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Events{% endblock %}
+{% block javascript %}
+<script>
+var get_events = function() {
+    $.get("/api/events", function(data) {
+        $("#events").empty();
+        $("#events").append(
+            '<thead>' +
+            '<th>#</th><th>Name</th><th>Date</th><th>Point Category</th>' +
+            '</thead>'
+        )
+        $.each(data.events, function(i, event) {
+            $("#events").append(
+                '<tr>' +
+                '<td>' + (i+1) + '</td>' +
+                '<td><a href="/events/' + encodeURIComponent(event.name) + '">' + event.name + '</a>' + '</td>' +
+                '<td align="center">' + event.date + '</td>' +
+                '<td align="center">' + event['point-category'] + '</td>' +
+                '</tr>'
+            );
+        });
+    });
+};
+
+$(document).ready(function() {
+    $('#event-form').submit(function (event) {
+        var data = {
+            name: $('input[name=name]').val(),
+            "point-category": $('#point-categories')[0].value,
+            "date": $('input[name=date]').val(),
+        }
+
+        $.ajax({
+            url: $(this).attr('action'),
+            type: $(this).attr('method'),
+            data: data,
+            success: function() {
+                $('#outcome').html('<span style="color: green">Successfully saved!</span>');
+                get_events();
+            }
+        }).fail(function(resp) {
+            // TODO This should be more user friendly
+            $('#outcome').html('<span style="color: red">There was a problem!</span>');
+        });
+        event.preventDefault();
+    });
+
+    PointCategories.init();
+    PointCategorySelectView.init('#point-categories', "");
+    PointCategories.get_point_categories(PointCategorySelectView.render);
+    get_events();
+});
+
+</script>
+{% endblock %}
+{% block content %}
+    <h1> Events </h1>
+    <table id="events" class="pure-table centered padded">
+    </table>
+
+    <h1> New Event </h1>
+    <form id="event-form" method="post" action="/api/events" class="pure-form pure-form-aligned">
+        <div class="pure-control-group">
+            <label>Name</label>
+            <input type="text" name="name" />
+        </div>
+
+        <div class="pure-control-group">
+            <label>Point Category</label>
+            <select id="point-categories" name="categories"></select>
+        </div>
+
+        <!-- TODO make a better, user-friendly date input -->
+        <!-- TODO validate input -->
+        <div class="pure-control-group">
+            <label>Date</label>
+            <input type="text" name="date" placeholder="YYYY-MM-DD"/>
+        </div>
+
+        <div class="pure-controls">
+            <input type="submit" class="pure-button" value="Save"/>
+        </div>
+    </form>
+
+    <p id="outcome"></p>
+{% endblock %}

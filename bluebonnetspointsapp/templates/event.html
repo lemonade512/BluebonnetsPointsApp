@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}{{target_event.name}}{% endblock %}
+{% block javascript %}
+<script>
+get_point_records = function() {
+    var params = {
+        event_name: "{{target_event.name}}",
+    };
+
+    var params_str = $.param(params);
+    $.ajax({
+        url: "/api/point-records?" + params_str
+    }).success(function(data) {
+        $("#records").empty();
+        $("#records").append(
+            '<thead>' +
+            '<th>User</th><th>Points</th>' +
+            '</thead>'
+        )
+        $.each(data.records, function(i, record) {
+            tr = $('<tr></tr>');
+            username =  $('<td><a href="/profile/' + record.username + '">' +
+                    record.username + '</a></td>');
+            tr.append(username);
+
+            if (record['points-earned'] == null) {
+                record['points-earned'] = 0;
+            }
+
+            points_earned = $('<td align="center"></td>');
+            points_entry = $('<input type="text" value="' + parseFloat(record['points-earned']) + '" />');
+            points_entry.keyup(function() {
+                new_value = parseFloat($(this).val());
+                if(isNaN(new_value))
+                    return
+
+                data = {
+                    'username': record.username,
+                    'event_name': record.event_name,
+                    'points-earned': new_value,
+                }
+                console.log($(this).val());
+                $.ajax({
+                    url: '/api/point-records',
+                    type: 'PUT',
+                    data: data,
+                    success: function() {
+                        // TODO I probably shouldn't bother the user in this case
+                        $('#outcome').html('<span style="color: green">Successfully saved!</span>');
+                    }
+                }).fail(function(resp) {
+                    // TODO This should be more user friendly
+                    $('#outcome').html('<span style="color: red">There was a problem!</span>');
+                });
+            });
+            points_earned.append(points_entry);
+            tr.append(points_earned);
+
+            $("#records").append(tr);
+        });
+    });
+}
+
+$(function () {
+    $('#event-form').submit(function (event) {
+        var data = {
+            name: $('input[name=name]').val(),
+            date: $('input[name=date]').val(),
+            'point-category': $("#point-categories")[0].value,
+        }
+
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'PUT',
+            data: data,
+            success: function() {
+                if (data['name'] !== "{{target_event.name}}") {
+                    console.log("Redirecting to proper URL");
+                    window.location.replace("/events/" + data['name']);
+                }
+                $('#outcome').html('<span style="color: green">Successfully saved!</span>');
+            }
+        }).fail(function(resp) {
+            // TODO This should be more user friendly
+            $('#outcome').html('<span style="color: red">There was a problem!</span>');
+        });
+        event.preventDefault();
+    });
+
+    PointCategories.init();
+    PointCategorySelectView.init('#point-categories', "{{target_event.point_category.get().name}}");
+    PointCategories.get_point_categories(PointCategorySelectView.render);
+    get_point_records();
+});
+
+</script>
+{% endblock %}
+{% block content %}
+    <h2> Event Details </h2>
+    <form id="event-form" method="put" action="/api/events/{{target_event.name.replace(" ", "")}}" class="pure-form pure-form-aligned centered-form">
+        <div class="pure-control-group">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" value="{{target_event.name}}" />
+        </div>
+
+        <div class="pure-control-group">
+            <label>Point Category</label>
+            <select id="point-categories" name="categories"></select>
+        </div>
+
+        <div class="pure-control-group">
+            <label>Date</label>
+            <input type="text" name="date" value="{{target_event.date.strftime('%Y-%m-%d')}}" />
+        </div>
+
+        <div class="pure-controls">
+            <input type="submit" class="pure-button" value="Save"/>
+        </div>
+    </form>
+    <p id="outcome"></p>
+
+    <h2>Records</h2>
+    <table id="records" class="pure-table centered padded">
+    </table>
+
+{% endblock %}
+

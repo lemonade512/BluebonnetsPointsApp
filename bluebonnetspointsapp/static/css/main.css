@@ -1,0 +1,158 @@
+@import url("/static/css/progressbar.css");
+
+html, body {
+    height: 100%;
+}
+
+#wrapper {
+    min-height: 100%;
+    position: relative;
+}
+
+.home-menu {
+    padding: 1em;
+    padding-right: 2em;
+    position: relative;
+    background-color: #dddddd;
+
+    /* Avoid the bug discussed here https://bugzilla.mozilla.org/show_bug.cgi?id=488725 */
+    white-space: normal;
+}
+
+@media (min-width: 48em) {
+    .home-menu ul {
+        float: right;
+    }
+}
+
+#users a:link {
+    color: #7291e6;
+    text-decoration: none;
+}
+
+#users a:visited {
+    color: #7291e6;
+    text-decoration: none;
+}
+
+#users a:hover {
+    text-decoration: underline;
+}
+
+#content {
+    /* Used to pad the footer */
+    padding-bottom: 60px;
+}
+
+#footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 40px;
+    text-align: center;
+}
+
+.centered {
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+#filter {
+    margin-bottom: 15px;
+}
+
+#point-exceptions table {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.point-display {
+    width: 100%;
+    border-spacing: 8px 20px;
+    border-collapse: separate;
+}
+
+.debug-hidden {
+    display: none;
+}
+
+@media screen and (min-width: 20em) {
+    .events-table {
+        margin: 2em;
+    }
+}
+
+.events-table td {
+    padding: 0.5em 1em;
+}
+
+.centered-form {
+    /*display: inline-block;*/
+    text-align: center;
+    width: 100%;
+}
+
+select {
+    border: 1px solid #111;
+    background: transparent;
+    padding: 5px 35px 5px 5px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    height: 34px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    /*background: url(/static/images/dropdown_arrow_32x32.png) 96% / 15% no-repeat #eee;*/
+    background: url(/static/images/dropdown_arrow_32x32.png) 96% / 24px no-repeat #eee;
+}
+/*target Internet Explorer 9 and Internet Explorer 10:*/
+@media screen and (min-width:0\0) {
+    select {
+        background:none;
+        padding: 5px;
+    }
+}
+
+#point-categories-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 8px;
+}
+
+#point-categories-table th {
+    background: #333;
+    color: white;
+    padding: 6px;
+}
+
+#point-categories-table td {
+    padding: 6px;
+}
+
+#point-categories-table .l1 {
+    font-weight: bold;
+}
+
+#point-categories-table .l2 td:first-of-type {
+    padding-left: 20px;
+}
+
+#point-categories-table tr:nth-of-type(odd) {
+    background: white;
+}
+
+@media screen and (max-width: 75em) {
+    #left-col {
+        width: 5%;
+    }
+
+    #right-col {
+        width: 5%;
+    }
+
+    #content {
+        width: 90%;
+    }
+}
+

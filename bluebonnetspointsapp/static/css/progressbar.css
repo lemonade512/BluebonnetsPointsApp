@@ -1,0 +1,111 @@
+@media (max-width: 48em) {
+    .progress-bar {
+        display: none;
+        width: 0px;
+    }
+
+    .progress-bar-container {
+        display: none;
+        width: 0px;
+    }
+}
+
+.progress-bar {
+    width: 100%;
+    height: 30px;
+    border-collapse: separate;
+    /*
+    border: 2px solid black;
+    border-radius: 8px;
+    */
+    table-layout: fixed;
+}
+
+.progress-bar-container {
+    width: 60%;
+    height: 100%;
+}
+
+.progress-bar tr:first-child td:first-child {
+    border-top-left-radius: 10px;
+    border-left: 2px solid black;
+}
+
+.progress-bar tr:first-child td:last-child {
+    border-top-right-radius: 10px;
+    border-right: 2px solid black;
+}
+
+.progress-bar tr:last-child td:first-child {
+    border-bottom-left-radius: 10px;
+}
+
+.progress-bar tr:last-child td:last-child {
+    border-bottom-right-radius: 10px;
+}
+
+.progress-bar td {
+    /*border: 2px solid black;*/
+    border-top: 2px solid black;
+    border-bottom: 2px solid black;
+}
+
+.progress-bar td:not(:first-child) {
+    border-left: 1px solid black;
+    height: 100%;
+}
+
+.contracted .progress-expander {
+    width: 15px;
+    height: 20px;
+    /*background-position: 0px 5px;*/
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 15px 20px;
+    background-image: url("/static/images/right_arrow.png");
+}
+
+.expanded .progress-expander {
+    width: 15px;
+    height: 20px;
+    /*background-position: 0px 5px;*/
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 15px 20px;
+    background-image: url("/static/images/down_arrow.png");
+}
+
+.filled-progress {
+    background-color: #169d43;
+}
+
+.progress-label {
+    font-size: 20pt;
+    color: #7f7f7f;
+    white-space: nowrap;
+}
+
+.l2 .progress-label {
+    color: #000;
+    font-size: 15pt;
+    text-align: right;
+}
+
+.l2 .progress-bar {
+    height: 15px;
+    width: 80%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+.remaining-points {
+    text-align: center;
+    color: red;
+}
+
+.finished-points {
+    text-align: center;
+    color: green;
+}
+

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Not Logged In{% endblock %}
+{% block content %}
+    <h1> Not Logged In </h1>
+    <!--
+        TODO This does not actually check to see if there is a login_url.
+        It might be a good idea to make this more robust.
+    -->
+    Must <a href={{login_url}}>login</a> to view that page!
+{% endblock %}
+
+
