@@ -11,7 +11,8 @@ Description
 ===========
 
 This is a web application built to support the Texas Bluebonnets, a social
-organization at the University of Texas at Austin.
+organization at the University of Texas at Austin. Click here_ to see more
+detailed source code documentation.
 
 Unit Tests
 ==========
@@ -24,4 +25,6 @@ Note
 
 This project has been set up using PyScaffold 2.5.6. For details and usage
 information on PyScaffold see http://pyscaffold.readthedocs.org/.
+
+.. _here: http://bluebonnetspointsapp.readthedocs.io/
 
